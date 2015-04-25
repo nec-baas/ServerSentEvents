@@ -20,6 +20,8 @@ namespace ServerSentEvents
             Reset();
         }
 
+        public bool IsDataEmpty() { return dataBuilder.Length == 0; }
+
         public bool IsDone() { return isDone; }
 
         public void Reset()

@@ -3,6 +3,8 @@
 
 using System;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ServerSentEvents
 {
@@ -25,23 +27,36 @@ namespace ServerSentEvents
         }
     }
 
+    static class StringExtensions
+    {
+        public static string RemoveLastLineFeedCharacter(this string str)
+        {
+            return str.EndsWith("\n") ? str.Remove(str.Length - 1) : str;
+        }
+    }
+
     public sealed class ServerSentEvent
     {
         private readonly string lastEventId;
         private readonly string eventType;
         private readonly string data;
         private readonly int? retry;
+        private readonly bool isEmptyData;
 
         public string LastEventId { get { return lastEventId; } }
         public string EventType { get { return eventType; } }
         public string Data { get { return data; } }
         public int? Retry { get { return retry; } }
 
+        public bool IsEmptyData { get { return isEmptyData; } }
+
         public ServerSentEvent(string lastEventId, string eventType, string data, int? retry)
         {
+            isEmptyData = string.IsNullOrEmpty(data);
+
             this.lastEventId = lastEventId;
             this.eventType = eventType;
-            this.data = data;
+            this.data = data.RemoveLastLineFeedCharacter();
             this.retry = retry;
         }
 
@@ -75,16 +90,51 @@ namespace ServerSentEvents
         public event EventHandler<StateChangedEventArgs> StateChanged;
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
 
+        private readonly EventStreamReader reader;
+        private readonly ServerSentEventBuilder builder;
+        private readonly CancellationTokenSource cts;
+
         public EventSource(Uri uri)
         {
+            reader = new EventStreamReader(uri, OnStateChanged);
+            reader.NewLineReceived += NewLineReceived;
+
+            builder = new ServerSentEventBuilder();
+
+            cts = new CancellationTokenSource();
+        }
+
+        private void NewLineReceived(object sender, NewLineReceivedEventArgs e)
+        {
+            builder.AddLine(e.Line);
+            if (builder.IsDone())
+            {
+                var sse = builder.ToServerSentEvent();
+                DispatchEvent(sse);
+                builder.Reset();
+            }
+        }
+
+        private void DispatchEvent(ServerSentEvent sse)
+        {
+            if (sse.IsEmptyData)
+                return;
+
+            if (sse.Retry.HasValue)
+                reader.ReconnectionTime = sse.Retry.Value;
+
+            OnEventReceived(sse);
         }
 
         public void Start()
         {
+            var token = cts.Token;
+            Task.Run(() => reader.StartAsync(token));
         }
 
         public void Stop()
         {
+            cts.Cancel();
         }
 
         private void OnEventReceived(ServerSentEvent sse)
