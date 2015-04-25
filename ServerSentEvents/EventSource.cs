@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Text;
 
 namespace ServerSentEvents
 {
@@ -42,6 +43,18 @@ namespace ServerSentEvents
             this.eventType = eventType;
             this.data = data;
             this.retry = retry;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            sb.Append("EventType: ").AppendLine(EventType);
+            sb.Append("Data: ").AppendLine(Data);
+            sb.Append("LastEventId: ").AppendLine(LastEventId);
+            if (Retry.HasValue)
+                sb.Append("Retry: ").AppendLine(Retry.Value.ToString());
+            return sb.ToString();
         }
     }
 
