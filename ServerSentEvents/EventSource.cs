@@ -148,6 +148,8 @@ namespace ServerSentEvents
 
         private void OnStateChanged(EventSourceState newState)
         {
+            builder.Reset();
+
             if (StateChanged != null)
                 StateChanged(this, new StateChangedEventArgs(newState));
         }
