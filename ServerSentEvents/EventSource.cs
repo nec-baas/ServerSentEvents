@@ -73,6 +73,17 @@ namespace ServerSentEvents
         public void Stop()
         {
         }
+
+        private void OnEventReceived(ServerSentEvent sse)
+        {
+            if (EventReceived != null)
+                EventReceived(this, new ServerSentEventReceivedEventArgs(sse));
+        }
+
+        private void OnStateChanged(EventSourceState newState)
+        {
+            if (StateChanged != null)
+                StateChanged(this, new StateChangedEventArgs(newState));
+        }
     }
 }
-
