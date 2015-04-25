@@ -95,12 +95,14 @@ namespace ServerSentEvents
                 }
                 catch (WebException)
                 {
-                    await Task.Delay(ReconnectionTime, token);
+                    // Ignore exception and retry.
                 }
                 finally
                 {
                     stateChangeNotifier(EventSourceState.CLOSED);
                 }
+
+                await Task.Delay(ReconnectionTime, token);
             }
         }
 
