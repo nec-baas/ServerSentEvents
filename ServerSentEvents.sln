@@ -1,6 +1,11 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{AB2A0E14-9136-44D6-83F1-361275F82A89}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSentEvents", "ServerSentEvents\ServerSentEvents.csproj", "{5764202C-B9ED-42A8-9D83-6DEEFED40186}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSentEvents.Sample", "ServerSentEvents.Sample\ServerSentEvents.Sample.csproj", "{0807F892-FD10-4D21-AB1D-D37426F60FB3}"
