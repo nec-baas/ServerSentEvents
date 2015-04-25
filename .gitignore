@@ -1,0 +1,7 @@
+*.userprefs
+bin
+obj
+packages
+.nuget
+TestResult.xml
+.paket/paket.exe
