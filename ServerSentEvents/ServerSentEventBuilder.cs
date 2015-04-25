@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ServerSentEvents
 {
-    class ServerSentEventBuilder
+    sealed class ServerSentEventBuilder
     {
         private bool isDone;
 

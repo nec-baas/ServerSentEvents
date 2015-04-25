@@ -22,7 +22,7 @@ namespace ServerSentEvents
         }
     }
 
-    class EventStreamReader
+    sealed class EventStreamReader
     {
         public delegate void StateChangeNotifier(EventSourceState newState);
 

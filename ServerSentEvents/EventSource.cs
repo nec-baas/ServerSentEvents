@@ -85,7 +85,7 @@ namespace ServerSentEvents
         }
     }
 
-    public class EventSource
+    public sealed class EventSource
     {
         public event EventHandler<StateChangedEventArgs> StateChanged;
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
