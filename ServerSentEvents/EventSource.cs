@@ -120,6 +120,9 @@ namespace ServerSentEvents
             if (sse.IsEmptyData)
                 return;
 
+            if (!string.IsNullOrEmpty(sse.LastEventId))
+                reader.LastEventId = sse.LastEventId;
+
             if (sse.Retry.HasValue)
                 reader.ReconnectionTime = sse.Retry.Value;
 

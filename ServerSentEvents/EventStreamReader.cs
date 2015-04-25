@@ -28,6 +28,7 @@ namespace ServerSentEvents
 
         public event EventHandler<NewLineReceivedEventArgs> NewLineReceived;
         public int ReconnectionTime { get; set; }
+        public string LastEventId { get; set; }
 
         private readonly Uri uri;
         private readonly StateChangeNotifier stateChangeNotifier;
@@ -45,11 +46,12 @@ namespace ServerSentEvents
         {
             var webRequest = WebRequest.Create(uri) as HttpWebRequest;
 
-            // FIXME: Add Last-Event-ID header
             webRequest.Accept = "text/event-stream";
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
             webRequest.KeepAlive = true;
             webRequest.Method = "GET";
+            if (!string.IsNullOrEmpty(LastEventId))
+                webRequest.Headers["Last-Event-ID"] = LastEventId;
 
             stateChangeNotifier(EventSourceState.CONNECTING);
 
