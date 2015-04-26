@@ -85,7 +85,7 @@ namespace ServerSentEvents
         }
     }
 
-    public sealed class EventSource
+    public sealed class EventSource : IDisposable
     {
         public event EventHandler<StateChangedEventArgs> StateChanged;
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
@@ -138,6 +138,11 @@ namespace ServerSentEvents
         public void Stop()
         {
             cts.Cancel();
+        }
+
+        public void Dispose()
+        {
+            this.Stop();
         }
 
         private void OnEventReceived(ServerSentEvent sse)
