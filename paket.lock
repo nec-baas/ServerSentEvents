@@ -2,3 +2,4 @@ NUGET
   remote: http://nuget.org/api/v2
   specs:
     FAKE (3.28.8)
+    NUnit (2.6.4) - framework: >= net45
