@@ -22,6 +22,16 @@ namespace ServerSentEvents
         }
     }
 
+    static class HttpWebResponseExtensions
+    {
+        public static string GetContentTypeIgnoringMimeType(this HttpWebResponse webResponse)
+        {
+            string contentType = webResponse.ContentType;
+            int indexOfSemicolon = contentType.IndexOf(";");
+            return indexOfSemicolon == -1 ? contentType : contentType.Substring(0, indexOfSemicolon);
+        }
+    }
+
     sealed class EventStreamReader
     {
         public delegate void StateChangeNotifier(EventSourceState newState);
@@ -81,7 +91,7 @@ namespace ServerSentEvents
                 try
                 {
                     var webResponse = await Request();
-                    if (webResponse.StatusCode == HttpStatusCode.OK && webResponse.ContentType == "text/event-stream")
+                    if (webResponse.StatusCode == HttpStatusCode.OK && webResponse.GetContentTypeIgnoringMimeType() == "text/event-stream")
                     {
                         stateChangeNotifier(EventSourceState.OPEN);
                         await Read(webResponse, token);
