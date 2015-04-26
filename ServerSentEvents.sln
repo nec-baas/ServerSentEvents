@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{AB2A0E14-9136-44D6-83F1-361275F82A89}"
@@ -9,6 +9,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSentEvents", "ServerSentEvents\ServerSentEvents.csproj", "{5764202C-B9ED-42A8-9D83-6DEEFED40186}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSentEvents.Sample", "ServerSentEvents.Sample\ServerSentEvents.Sample.csproj", "{0807F892-FD10-4D21-AB1D-D37426F60FB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerSentEvents.Tests", "ServerSentEvents.Tests\ServerSentEvents.Tests.csproj", "{975DC83B-ADF9-4F49-9627-B40CCE40AEBB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +26,11 @@ Global
 		{5764202C-B9ED-42A8-9D83-6DEEFED40186}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5764202C-B9ED-42A8-9D83-6DEEFED40186}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5764202C-B9ED-42A8-9D83-6DEEFED40186}.Release|Any CPU.Build.0 = Release|Any CPU
+		{975DC83B-ADF9-4F49-9627-B40CCE40AEBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{975DC83B-ADF9-4F49-9627-B40CCE40AEBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{975DC83B-ADF9-4F49-9627-B40CCE40AEBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{975DC83B-ADF9-4F49-9627-B40CCE40AEBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 EndGlobal
