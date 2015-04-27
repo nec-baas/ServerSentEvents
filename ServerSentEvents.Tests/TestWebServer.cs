@@ -2,9 +2,10 @@
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Net;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ServerSentEvents.Tests
 {
@@ -12,6 +13,7 @@ namespace ServerSentEvents.Tests
     {
         private readonly Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task>> routeDict;
         private readonly HttpListener listener;
+        private readonly CancellationTokenSource cts;
 
         public TestWebServer(params Uri[] baseUris)
         {
@@ -19,6 +21,8 @@ namespace ServerSentEvents.Tests
                 throw new ArgumentException("baseUris");
 
             listener = new HttpListener();
+            cts = new CancellationTokenSource();
+
             routeDict = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task>>();
 
             foreach (var baseUri in baseUris)
@@ -30,23 +34,26 @@ namespace ServerSentEvents.Tests
             routeDict.Add(path, route);
         }
 
-        private async void ProcessAsync()
+        private async void ProcessAsync(CancellationToken token)
         {
-            HttpListenerContext ctx = await listener.GetContextAsync();
-
-            string url = ctx.Request.RawUrl;
-            Func<HttpListenerRequest, HttpListenerResponse, Task> route;
-
-            try
+            while (!token.IsCancellationRequested)
             {
-                if (routeDict.TryGetValue(url, out route))
-                    await route(ctx.Request, ctx.Response);
-                else
-                    ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
-            finally
-            {
-                ctx.Response.OutputStream.Close();
+                HttpListenerContext ctx = await listener.GetContextAsync();
+
+                string url = ctx.Request.RawUrl;
+                Func<HttpListenerRequest, HttpListenerResponse, Task> route;
+
+                try
+                {
+                    if (routeDict.TryGetValue(url, out route))
+                        await route(ctx.Request, ctx.Response);
+                    else
+                        ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                }
+                finally
+                {
+                    ctx.Response.OutputStream.Close();
+                }
             }
         }
 
@@ -56,7 +63,8 @@ namespace ServerSentEvents.Tests
 
             try
             {
-                Task.Run(() => ProcessAsync());
+                CancellationToken token = cts.Token;
+                Task.Run(() => ProcessAsync(token));
             }
             catch (HttpListenerException)
             {
@@ -68,6 +76,7 @@ namespace ServerSentEvents.Tests
         public void Stop()
         {
             listener.Stop();
+            cts.Cancel();
         }
     }
 }
