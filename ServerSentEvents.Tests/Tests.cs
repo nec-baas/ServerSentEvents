@@ -5,8 +5,6 @@ using NUnit.Framework;
 using System;
 using System.Net;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace ServerSentEvents.Tests
