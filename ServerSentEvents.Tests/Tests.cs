@@ -22,6 +22,7 @@ namespace ServerSentEvents.Tests
             ws.Start();
             ws.AddRoute("/simple", SimpleEventStream);
             ws.AddRoute("/multiLineData", MultiLineDataEventStream);
+            ws.AddRoute("/comments", EventStreamWithComments);
         }
 
         [TestFixtureTearDown]
@@ -63,6 +64,20 @@ namespace ServerSentEvents.Tests
             }
         }
 
+        private async Task EventStreamWithComments(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            response.StatusCode = (int)HttpStatusCode.OK;
+            response.ContentType = "text/event-stream";
+
+            using (var writer = new StreamWriter(response.OutputStream))
+            {
+                writer.AutoFlush = true;
+                await writer.WriteAsync(": This is a comment!\n");
+                await writer.WriteAsync("data: 1\n\n");
+                await writer.WriteAsync(": This is another comment!\n");
+            }
+        }
+
         [Test]
         public void TestEventSource()
         {
@@ -89,6 +104,21 @@ namespace ServerSentEvents.Tests
             DataRecorder dataRecorder = new DataRecorder("1\n2", "3\n4");
 
             using (var es = new EventSource(new Uri(baseUri, "/multiLineData")))
+            {
+                es.EventReceived += dataRecorder.EventReceived;
+                es.Start();
+                dataRecorder.Wait(5000);
+            }
+
+            dataRecorder.Assert();
+        }
+
+        [Test]
+        public void TestComments()
+        {
+            DataRecorder dataRecorder = new DataRecorder("1");
+
+            using (var es = new EventSource(new Uri(baseUri, "/comments")))
             {
                 es.EventReceived += dataRecorder.EventReceived;
                 es.Start();
