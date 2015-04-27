@@ -38,6 +38,7 @@
     <Compile Include="Tests.cs" />
     <Compile Include="TestWebServer.cs" />
     <Compile Include="StateTransitionRecorder.cs" />
+    <Compile Include="DataRecorder.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

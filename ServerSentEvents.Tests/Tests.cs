@@ -51,26 +51,21 @@ namespace ServerSentEvents.Tests
         [Test]
         public void TestEventSource()
         {
-            CountdownEvent c = new CountdownEvent(3);
-            StringBuilder builder = new StringBuilder();
-            StateTransitionRecorder recorder = new StateTransitionRecorder(
+            DataRecorder dataRecorder = new DataRecorder("0", "1", "2");
+            StateTransitionRecorder stateRecorder = new StateTransitionRecorder(
                 EventSourceState.CONNECTING, EventSourceState.OPEN, EventSourceState.CLOSED);
 
             using (var es = new EventSource(new Uri(baseUri, "/simple")))
             {
-                es.StateChanged += recorder.StateChanged;
-                es.EventReceived += (sender, e) =>
-                    {
-                        builder.Append(e.Message.Data);
-                        c.Signal();
-                    };
+                es.StateChanged += stateRecorder.StateChanged;
+                es.EventReceived += dataRecorder.EventReceived;
                 es.Start();
-                c.Wait(5000);
-                recorder.Wait(5000);
+                dataRecorder.Wait(5000);
+                stateRecorder.Wait(5000);
             }
 
-            recorder.Assert();
-            Assert.AreEqual("012", builder.ToString());
+            stateRecorder.Assert();
+            dataRecorder.Assert();
         }
     }
 }
