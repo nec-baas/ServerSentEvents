@@ -23,6 +23,7 @@ namespace ServerSentEvents.Tests
             ws = new TestWebServer(baseUri);
             ws.Start();
             ws.AddRoute("/simple", SimpleEventStream);
+            ws.AddRoute("/multiLineData", MultiLineDataEventStream);
         }
 
         [TestFixtureTearDown]
@@ -48,6 +49,22 @@ namespace ServerSentEvents.Tests
             }
         }
 
+        private async Task MultiLineDataEventStream(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            response.StatusCode = (int)HttpStatusCode.OK;
+            response.ContentType = "text/event-stream";
+
+            using (var writer = new StreamWriter(response.OutputStream))
+            {
+                writer.AutoFlush = true;
+                await writer.WriteAsync("data: 1\n");
+                await writer.WriteAsync("data: 2\n\n");
+
+                await writer.WriteAsync("data: 3\n");
+                await writer.WriteAsync("data: 4\n\n");
+            }
+        }
+
         [Test]
         public void TestEventSource()
         {
@@ -67,6 +84,20 @@ namespace ServerSentEvents.Tests
             stateRecorder.Assert();
             dataRecorder.Assert();
         }
+
+        [Test]
+        public void TestMultiLineData()
+        {
+            DataRecorder dataRecorder = new DataRecorder("1\n2", "3\n4");
+
+            using (var es = new EventSource(new Uri(baseUri, "/multiLineData")))
+            {
+                es.EventReceived += dataRecorder.EventReceived;
+                es.Start();
+                dataRecorder.Wait(5000);
+            }
+
+            dataRecorder.Assert();
+        }
     }
 }
-
