@@ -1,5 +1,5 @@
 init:
   - git config --global core.autocrlf input
 build_script:
-  - cmd: build.cmd BuildSample
+  - cmd: build.cmd NUnit
 test: off

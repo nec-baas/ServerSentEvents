@@ -53,6 +53,17 @@ Target "BuildSample" (fun () ->
       |> Log "AppBuild-Output: "
 )
 
+Target "BuildTests" (fun () ->
+    !! "ServerSentEvents.Tests/ServerSentEvents.Tests.csproj"
+      |> MSBuildRelease "" "Build"
+      |> Log "AppBuild-Output: "
+)
+
+Target "NUnit" (fun () ->
+    !! ("ServerSentEvents.Tests/bin/Release/ServerSentEvents.Tests.dll")
+    |> NUnit (fun p -> { p with DisableShadowCopy = true; OutputFile = "TestResult.xml" } )
+)
+
 // --------------------------------------------------------------------------------------
 // Help
 // --------------------------------------------------------------------------------------
@@ -64,10 +75,14 @@ Target "Help" (fun () ->
     printfn "  Targets for building:"
     printfn "  * Build"
     printfn "  * BuildSample"
+    printfn "  * BuildTests"
+    printfn "  * NUnit"
 )
 
 "AssemblyInfo"
   ==> "Build"
   ==> "BuildSample"
+  ==> "BuildTests"
+  ==> "NUnit"
 
 RunTargetOrDefault "Help"
