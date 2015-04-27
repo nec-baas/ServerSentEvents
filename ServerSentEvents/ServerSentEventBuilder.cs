@@ -48,7 +48,7 @@ namespace ServerSentEvents
             return Tuple.Create(field, value);
         }
 
-        public void AddLine(string line)
+        public void AppendLine(string line)
         {
             if (string.IsNullOrEmpty(line))
             {

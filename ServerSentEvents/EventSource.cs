@@ -106,7 +106,7 @@ namespace ServerSentEvents
 
         private void NewLineReceived(object sender, NewLineReceivedEventArgs e)
         {
-            builder.AddLine(e.Line);
+            builder.AppendLine(e.Line);
             if (builder.IsDone())
             {
                 var sse = builder.ToServerSentEvent();
