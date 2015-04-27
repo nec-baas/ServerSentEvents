@@ -94,8 +94,12 @@ namespace ServerSentEvents
         private readonly ServerSentEventBuilder builder;
         private readonly CancellationTokenSource cts;
 
+        public EventSourceState ReadyState { get; private set; }
+
         public EventSource(Uri uri)
         {
+            ReadyState = EventSourceState.CONNECTING;
+
             reader = new EventStreamReader(uri, OnStateChanged);
             reader.NewLineReceived += NewLineReceived;
 
@@ -153,6 +157,7 @@ namespace ServerSentEvents
 
         private void OnStateChanged(EventSourceState newState)
         {
+            ReadyState = newState;
             builder.Reset();
 
             if (StateChanged != null)
