@@ -1,6 +1,20 @@
 NUGET
   remote: http://nuget.org/api/v2
   specs:
-    FAKE (3.28.8)
+    FAKE (3.29.7)
     NUnit (2.6.4) - framework: >= net45
     NUnit.Runners (2.6.4)
+    Rx-Core (2.2.5) - framework: >= net45
+      Rx-Interfaces (>= 2.2.5)
+    Rx-Interfaces (2.2.5) - framework: >= net45
+    Rx-Linq (2.2.5) - framework: >= net45
+      Rx-Core (>= 2.2.5)
+      Rx-Interfaces (>= 2.2.5)
+    Rx-Main (2.2.5) - framework: >= net45
+      Rx-Core (>= 2.2.5)
+      Rx-Interfaces (>= 2.2.5)
+      Rx-Linq (>= 2.2.5)
+      Rx-PlatformServices (>= 2.2.5)
+    Rx-PlatformServices (2.2.5) - framework: >= net45
+      Rx-Core (>= 2.2.5)
+      Rx-Interfaces (>= 2.2.5)

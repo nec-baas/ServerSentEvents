@@ -3,3 +3,8 @@ source http://nuget.org/api/v2
 nuget FAKE
 nuget NUnit 2.6.4 framework: >= net45
 nuget NUnit.Runners
+nuget Rx-Core 2.2.5 framework: >= net45
+nuget Rx-Interfaces 2.2.5 framework: >= net45
+nuget Rx-Linq 2.2.5 framework: >= net45
+nuget Rx-Main 2.2.5 framework: >= net45
+nuget Rx-PlatformServices 2.2.5 framework: >= net45
