@@ -11,18 +11,6 @@ using System.Threading.Tasks;
 
 namespace ServerSentEvents
 {
-    class NewLineReceivedEventArgs : EventArgs
-    {
-        private readonly string line;
-
-        public string Line { get { return line; } }
-
-        public NewLineReceivedEventArgs(string line)
-        {
-            this.line = line;
-        }
-    }
-
     static class HttpWebResponseExtensions
     {
         public static string GetContentTypeIgnoringMimeType(this HttpWebResponse webResponse)
@@ -39,14 +27,15 @@ namespace ServerSentEvents
     sealed class EventStreamReader
     {
 
-        public event EventHandler<NewLineReceivedEventArgs> NewLineReceived;
         public int ReconnectionTime { get; set; }
         public string LastEventId { get; set; }
 
         private readonly Uri uri;
         private readonly Subject<EventSourceState> stateSubject = new Subject<EventSourceState>();
+        private readonly Subject<string> newLineSubject = new Subject<string>();
 
         public IObservable<EventSourceState> StateObservable { get { return stateSubject; } }
+        public IObservable<string> NewLineObservable { get { return newLineSubject; } }
 
         public EventStreamReader(Uri uri)
         {
@@ -81,7 +70,7 @@ namespace ServerSentEvents
                 while (!token.IsCancellationRequested)
                 {
                     line = await reader.ReadLineAsync();
-                    OnNewLineReceived(line);
+                    newLineSubject.OnNext(line);
                     if (line == null)
                         break;
                 }
@@ -124,12 +113,6 @@ namespace ServerSentEvents
 
                 await Task.Delay(ReconnectionTime, token);
             }
-        }
-
-        private void OnNewLineReceived(string line)
-        {
-            if (NewLineReceived != null)
-                NewLineReceived(this, new NewLineReceivedEventArgs(line));
         }
     }
 }

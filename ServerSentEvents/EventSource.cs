@@ -102,16 +102,16 @@ namespace ServerSentEvents
 
             reader = new EventStreamReader(uri);
             reader.StateObservable.Subscribe(OnStateChanged);
-            reader.NewLineReceived += NewLineReceived;
+            reader.NewLineObservable.Subscribe(NewLineReceived);
 
             builder = new ServerSentEventBuilder();
 
             cts = new CancellationTokenSource();
         }
 
-        private void NewLineReceived(object sender, NewLineReceivedEventArgs e)
+        private void NewLineReceived(string line)
         {
-            builder.AppendLine(e.Line);
+            builder.AppendLine(line);
             if (builder.IsDone())
             {
                 var sse = builder.ToServerSentEvent();
