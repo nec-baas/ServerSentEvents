@@ -8,35 +8,10 @@ namespace ServerSentEvents
 {
     sealed class ServerSentEventBuilder
     {
-        private bool isDone;
-
         private string lastEventId;
         private string eventType;
-        private StringBuilder dataBuilder;
+        private readonly StringBuilder dataBuilder = new StringBuilder();
         private int? retry;
-
-        public ServerSentEventBuilder()
-        {
-            Reset();
-        }
-
-        public bool IsDataEmpty() { return dataBuilder.Length == 0; }
-
-        public bool IsDone() { return isDone; }
-
-        public void Reset()
-        {
-            lastEventId = string.Empty;
-            eventType = string.Empty;
-            dataBuilder = new StringBuilder();
-            retry = null;
-            isDone = false;
-        }
-
-        public ServerSentEvent ToServerSentEvent()
-        {
-            return new ServerSentEvent(lastEventId, eventType, dataBuilder.ToString(), retry);
-        }
 
         private static Tuple<string, string> ParseFieldAndValue(string line)
         {
@@ -48,18 +23,8 @@ namespace ServerSentEvents
             return Tuple.Create(field, value);
         }
 
-        public void AppendLine(string line)
+        public ServerSentEventBuilder AppendLine(string line)
         {
-            if (string.IsNullOrEmpty(line))
-            {
-                isDone = true;
-                return;
-            }
-
-            // Comment
-            if (line.StartsWith(":"))
-                return;
-
             string field;
             string value;
 
@@ -93,6 +58,15 @@ namespace ServerSentEvents
                         retry = intValue;
                     break;
             }
+
+            return this;
+        }
+
+        public bool IsDataEmpty() { return dataBuilder.Length == 0; }
+
+        public ServerSentEvent ToServerSentEvent()
+        {
+            return new ServerSentEvent(lastEventId, eventType, dataBuilder.ToString(), retry);
         }
     }
 }

@@ -2,6 +2,9 @@
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -91,7 +94,6 @@ namespace ServerSentEvents
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
 
         private readonly EventStreamReader reader;
-        private readonly ServerSentEventBuilder builder;
         private readonly CancellationTokenSource cts;
 
         public EventSourceState ReadyState { get; private set; }
@@ -102,22 +104,28 @@ namespace ServerSentEvents
 
             reader = new EventStreamReader(uri);
             reader.StateObservable.Subscribe(OnStateChanged);
-            reader.NewLineObservable.Subscribe(NewLineReceived);
 
-            builder = new ServerSentEventBuilder();
+            var closer = new Subject<Unit>();
+            reader.NewLineObservable
+                .GroupBy(string.IsNullOrEmpty)
+                .Subscribe(g =>
+                {
+                    if (g.Key) // line is empty or null.
+                    {
+                        g.Subscribe(_ => closer.OnNext(Unit.Default));
+                    }
+                    else
+                    {
+                        g.Window(() => closer).Subscribe(window =>
+                            window
+                                .Where(line => !line.StartsWith(":"))
+                                .Aggregate(new ServerSentEventBuilder(), (builder, line) => builder.AppendLine(line))
+                                .Select(builder => builder.ToServerSentEvent())
+                                .Subscribe(DispatchEvent));
+                    }
+                });
 
             cts = new CancellationTokenSource();
-        }
-
-        private void NewLineReceived(string line)
-        {
-            builder.AppendLine(line);
-            if (builder.IsDone())
-            {
-                var sse = builder.ToServerSentEvent();
-                DispatchEvent(sse);
-                builder.Reset();
-            }
         }
 
         private void DispatchEvent(ServerSentEvent sse)
@@ -159,7 +167,6 @@ namespace ServerSentEvents
         private void OnStateChanged(EventSourceState newState)
         {
             ReadyState = newState;
-            builder.Reset();
 
             if (StateChanged != null)
                 StateChanged(this, new StateChangedEventArgs(newState));
