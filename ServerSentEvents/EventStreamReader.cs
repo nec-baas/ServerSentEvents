@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using System.Net.Cache;
 using System.IO;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,19 +38,19 @@ namespace ServerSentEvents
 
     sealed class EventStreamReader
     {
-        public delegate void StateChangeNotifier(EventSourceState newState);
 
         public event EventHandler<NewLineReceivedEventArgs> NewLineReceived;
         public int ReconnectionTime { get; set; }
         public string LastEventId { get; set; }
 
         private readonly Uri uri;
-        private readonly StateChangeNotifier stateChangeNotifier;
+        private readonly Subject<EventSourceState> stateSubject = new Subject<EventSourceState>();
 
-        public EventStreamReader(Uri uri, StateChangeNotifier stateChangeNotifier)
+        public IObservable<EventSourceState> StateObservable { get { return stateSubject; } }
+
+        public EventStreamReader(Uri uri)
         {
             this.uri = uri;
-            this.stateChangeNotifier = stateChangeNotifier;
 
             const int DefaultReconnectionTime = 3000; // in milliseconds
             ReconnectionTime = DefaultReconnectionTime;
@@ -66,7 +67,7 @@ namespace ServerSentEvents
             if (!string.IsNullOrEmpty(LastEventId))
                 webRequest.Headers["Last-Event-ID"] = LastEventId;
 
-            stateChangeNotifier(EventSourceState.CONNECTING);
+            stateSubject.OnNext(EventSourceState.CONNECTING);
 
             var webResponse = await webRequest.GetResponseAsync() as HttpWebResponse;
             return webResponse;
@@ -96,7 +97,7 @@ namespace ServerSentEvents
                     var webResponse = await Request();
                     if (webResponse.StatusCode == HttpStatusCode.OK && webResponse.GetContentTypeIgnoringMimeType() == "text/event-stream")
                     {
-                        stateChangeNotifier(EventSourceState.OPEN);
+                        stateSubject.OnNext(EventSourceState.OPEN);
                         await Read(webResponse, token);
                     }
                     else
@@ -118,7 +119,7 @@ namespace ServerSentEvents
                 }
                 finally
                 {
-                    stateChangeNotifier(EventSourceState.CLOSED);
+                    stateSubject.OnNext(EventSourceState.CLOSED);
                 }
 
                 await Task.Delay(ReconnectionTime, token);

@@ -100,7 +100,8 @@ namespace ServerSentEvents
         {
             ReadyState = EventSourceState.CONNECTING;
 
-            reader = new EventStreamReader(uri, OnStateChanged);
+            reader = new EventStreamReader(uri);
+            reader.StateObservable.Subscribe(OnStateChanged);
             reader.NewLineReceived += NewLineReceived;
 
             builder = new ServerSentEventBuilder();
