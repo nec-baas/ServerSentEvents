@@ -50,6 +50,12 @@ namespace ServerSentEvents.Tests
                     else
                         ctx.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
+                catch (Exception e)
+                {
+                    // FIXME: Use a logger instead of Console.Error.
+                    // Log unexpected error.
+                    Console.Error.WriteLine(e);
+                }
                 finally
                 {
                     ctx.Response.OutputStream.Close();
