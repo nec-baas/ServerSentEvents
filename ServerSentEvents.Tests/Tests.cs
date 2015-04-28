@@ -15,7 +15,7 @@ namespace ServerSentEvents.Tests
         private readonly Uri baseUri = new Uri("http://localhost:8080");
         private TestWebServer ws;
 
-        [TestFixtureSetUp]
+        [SetUp]
         public void ServerSetUp()
         {
             ws = new TestWebServer(baseUri);
@@ -25,7 +25,7 @@ namespace ServerSentEvents.Tests
             ws.AddRoute("/comments", EventStreamWithComments);
         }
 
-        [TestFixtureTearDown]
+        [TearDown]
         public void ServerTearDown()
         {
             ws.Stop();
