@@ -94,7 +94,7 @@ namespace ServerSentEvents
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
 
         private readonly EventStreamReader reader;
-        private readonly CancellationTokenSource cts;
+        private IDisposable readSubscription;
 
         public EventSourceState ReadyState { get; private set; }
 
@@ -104,28 +104,6 @@ namespace ServerSentEvents
 
             reader = new EventStreamReader(uri);
             reader.StateObservable.Subscribe(OnStateChanged);
-
-            var closer = new Subject<Unit>();
-            reader.NewLineObservable
-                .GroupBy(string.IsNullOrEmpty)
-                .Subscribe(g =>
-                {
-                    if (g.Key) // line is empty or null.
-                    {
-                        g.Subscribe(_ => closer.OnNext(Unit.Default));
-                    }
-                    else
-                    {
-                        g.Window(() => closer).Subscribe(window =>
-                            window
-                                .Where(line => !line.StartsWith(":"))
-                                .Aggregate(new ServerSentEventBuilder(), (builder, line) => builder.AppendLine(line))
-                                .Select(builder => builder.ToServerSentEvent())
-                                .Subscribe(DispatchEvent));
-                    }
-                });
-
-            cts = new CancellationTokenSource();
         }
 
         private void DispatchEvent(ServerSentEvent sse)
@@ -144,13 +122,31 @@ namespace ServerSentEvents
 
         public void Start()
         {
-            var token = cts.Token;
-            Task.Run(() => reader.StartAsync(token));
+            var closer = new Subject<Unit>();
+            readSubscription = reader
+                .ReadLines()
+                .GroupBy(string.IsNullOrEmpty)
+                .Subscribe(g =>
+                {
+                    if (g.Key) // line is empty or null.
+                    {
+                        g.Subscribe(_ => closer.OnNext(Unit.Default));
+                    }
+                    else
+                    {
+                        g.Window(() => closer).Subscribe(window =>
+                            window
+                                .Where(line => !line.StartsWith(":"))
+                                .Aggregate(new ServerSentEventBuilder(), (builder, line) => builder.AppendLine(line))
+                                .Select(builder => builder.ToServerSentEvent())
+                                .Subscribe(DispatchEvent));
+                    }
+                });
         }
 
         public void Stop()
         {
-            cts.Cancel();
+            readSubscription.Dispose();
         }
 
         public void Dispose()
