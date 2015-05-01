@@ -64,6 +64,33 @@ Target "NUnit" (fun () ->
     |> NUnit (fun p -> { p with DisableShadowCopy = true; OutputFile = "TestResult.xml" } )
 )
 
+
+Target "NuGet" (fun () ->
+    FileHelper.CreateDir "bin"
+
+    // Format the release notes
+    let releaseNotes = release.Notes |> String.concat "\n"
+
+    NuGet (fun p ->
+        {p with
+            Authors = authors
+            Project = project
+            Summary = summary
+            Description = description
+            Version = nugetVersion
+            ReleaseNotes = releaseNotes
+            Tags = tags
+            OutputPath = "bin"
+            // This option is needed to workaround a bug in NuGet
+            // Otherwise, NuGet fails to recognize dotted paths in nuspec file.
+            // https://nuget.codeplex.com/workitem/2111
+            NoDefaultExcludes = true
+            AccessKey = getBuildParamOrDefault "nugetkey" ""
+            Publish = hasBuildParam "nugetkey"
+            Files = [("../ServerSentEvents/bin/Release/ServerSentEvents.dll", Some "lib/net45", None)]})
+        "NuGet/ServerSentEvents.nuspec"
+)
+
 // --------------------------------------------------------------------------------------
 // Help
 // --------------------------------------------------------------------------------------
@@ -77,6 +104,7 @@ Target "Help" (fun () ->
     printfn "  * BuildSample"
     printfn "  * BuildTests"
     printfn "  * NUnit"
+    printfn "  * NuGet"
 )
 
 "AssemblyInfo"
@@ -84,5 +112,6 @@ Target "Help" (fun () ->
   ==> "BuildSample"
   ==> "BuildTests"
   ==> "NUnit"
+  ==> "NuGet"
 
 RunTargetOrDefault "Help"
