@@ -1,4 +1,4 @@
-# ServerSentEvents
+# ServerSentEvents [![NuGet](https://img.shields.io/nuget/v/ServerSentEvents.svg)](https://www.nuget.org/packages/ServerSentEvents/)
 
 ServerSentEvents is a client library for Server-Sent Events (SSE).
 
