@@ -5,8 +5,10 @@ using System;
 using System.Net;
 using System.Net.Cache;
 using System.IO;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ServerSentEvents
@@ -80,23 +82,19 @@ namespace ServerSentEvents
 
         public IObservable<string> ReadLines()
         {
-            return Observable.Create<string>(async (observer, token) =>
-            {
-                while (!token.IsCancellationRequested)
+            return Observable.Create(
+                new Func<IObserver<string>, CancellationToken, Task<IDisposable>>(async (observer, token) =>
                 {
                     try
                     {
                         var webResponse = await Request();
+
+                        // FIXME: Handle status code according to
+                        // http://www.w3.org/TR/eventsource/#processing-model
                         if (webResponse.StatusCode == HttpStatusCode.OK && webResponse.GetContentTypeIgnoringMimeType() == "text/event-stream")
                         {
                             stateSubject.OnNext(EventSourceState.OPEN);
-                            Read(webResponse).Subscribe(observer);
-                        }
-                        else
-                        {
-                            // FIXME: Handle status code according to
-                            // http://www.w3.org/TR/eventsource/#processing-model
-                            break;
+                            return Read(webResponse).Subscribe(observer);
                         }
                     }
                     catch (WebException)
@@ -112,11 +110,11 @@ namespace ServerSentEvents
                     finally
                     {
                         stateSubject.OnNext(EventSourceState.CLOSED);
+                        await Task.Delay(ReconnectionTime, token);
                     }
 
-                    await Task.Delay(ReconnectionTime, token);
-                }
-            });
+                    return Disposable.Empty;
+                })).Repeat();
         }
     }
 }
