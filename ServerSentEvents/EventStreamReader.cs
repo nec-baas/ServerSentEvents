@@ -55,41 +55,33 @@ namespace ServerSentEvents
                 reader => Observable.FromAsync(reader.ReadLineAsync).Repeat().TakeWhile(line => line != null));
         }
 
+        private static bool IsEventStream(HttpWebResponse response)
+        {
+            // FIXME: Handle status code according to
+            // http://www.w3.org/TR/eventsource/#processing-model
+            return response.StatusCode == HttpStatusCode.OK
+                && response.GetContentTypeIgnoringMimeType() == "text/event-stream";
+        }
+
         public IObservable<string> ReadLines()
         {
-            return Observable.Create(
-                new Func<IObserver<string>, CancellationToken, Task<IDisposable>>(async (observer, token) =>
+            var delay = Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(ReconnectionTime));
+            return Observable
+                .FromAsync(Request)
+                .Where(IsEventStream)
+                .SelectMany(webResponse =>
                 {
-                    try
-                    {
-                        var webResponse = await Request();
-
-                        // FIXME: Handle status code according to
-                        // http://www.w3.org/TR/eventsource/#processing-model
-                        if (webResponse.StatusCode == HttpStatusCode.OK && webResponse.GetContentTypeIgnoringMimeType() == "text/event-stream")
-                        {
-                            stateSubject.OnNext(EventSourceState.OPEN);
-                            return Read(webResponse).Subscribe(observer);
-                        }
-                    }
-                    catch (WebException)
-                    {
-                        // Ignore exception and retry.
-                    }
-                    catch (Exception e)
-                    {
-                        // FIXME: Use a logger instead of Console.Error.
-                        // Log unexpected error.
-                        Console.Error.WriteLine(e);
-                    }
-                    finally
-                    {
-                        stateSubject.OnNext(EventSourceState.CLOSED);
-                        await Task.Delay(ReconnectionTime, token);
-                    }
-
-                    return Disposable.Empty;
-                })).Repeat();
+                    stateSubject.OnNext(EventSourceState.OPEN);
+                    return Read(webResponse);
+                }).Catch(new Func<Exception, IObservable<string>>(e =>
+                {
+                    // FIXME: Use a logger instead of Console.Error.
+                    // Log unexpected error.
+                    Console.Error.WriteLine(e);
+                    return Observable.Empty<string>();
+                })).Finally(() =>
+                    stateSubject.OnNext(EventSourceState.CLOSED)
+                ).Concat(delay).Repeat();
         }
     }
 }
