@@ -31,21 +31,23 @@ namespace ServerSentEvents
             ReconnectionTime = DefaultReconnectionTime;
         }
 
-        private async Task<HttpWebResponse> Request()
+        private IObservable<HttpWebResponse> Request()
         {
-            var webRequest = WebRequest.Create(uri) as HttpWebRequest;
+            return Observable.Defer(() =>
+            {
+                var webRequest = WebRequest.Create(uri) as HttpWebRequest;
 
-            webRequest.Accept = "text/event-stream";
-            webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
-            webRequest.KeepAlive = true;
-            webRequest.Method = "GET";
-            if (!string.IsNullOrEmpty(LastEventId))
-                webRequest.Headers["Last-Event-ID"] = LastEventId;
+                webRequest.Accept = "text/event-stream";
+                webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+                webRequest.KeepAlive = true;
+                webRequest.Method = "GET";
+                if (!string.IsNullOrEmpty(LastEventId))
+                    webRequest.Headers["Last-Event-ID"] = LastEventId;
 
-            stateSubject.OnNext(EventSourceState.CONNECTING);
+                stateSubject.OnNext(EventSourceState.CONNECTING);
 
-            var webResponse = await webRequest.GetResponseAsync() as HttpWebResponse;
-            return webResponse;
+                return Observable.FromAsync(webRequest.GetResponseAsync).Cast<HttpWebResponse>();
+            });
         }
 
         private IObservable<string> Read(HttpWebResponse webResponse)
@@ -66,8 +68,7 @@ namespace ServerSentEvents
         public IObservable<string> ReadLines()
         {
             var delay = Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(ReconnectionTime));
-            return Observable
-                .FromAsync(Request)
+            return Request()
                 .Where(IsEventStream)
                 .SelectMany(webResponse =>
                 {
