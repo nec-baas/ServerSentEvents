@@ -67,7 +67,9 @@ namespace ServerSentEvents
 
         public IObservable<string> ReadLines()
         {
-            var delay = Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(ReconnectionTime));
+            var delay = Observable.Defer(() =>
+                Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(ReconnectionTime))
+            );
             return Request()
                 .Where(IsEventStream)
                 .SelectMany(webResponse =>
