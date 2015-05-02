@@ -13,22 +13,8 @@ using System.Threading.Tasks;
 
 namespace ServerSentEvents
 {
-    static class HttpWebResponseExtensions
-    {
-        public static string GetContentTypeIgnoringMimeType(this HttpWebResponse webResponse)
-        {
-            string contentType = webResponse.ContentType;
-            if (contentType == null)
-                return null;
-
-            int indexOfSemicolon = contentType.IndexOf(";");
-            return indexOfSemicolon == -1 ? contentType : contentType.Substring(0, indexOfSemicolon);
-        }
-    }
-
     sealed class EventStreamReader
     {
-
         public int ReconnectionTime { get; set; }
         public string LastEventId { get; set; }
 

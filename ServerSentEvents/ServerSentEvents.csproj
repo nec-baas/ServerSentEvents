@@ -35,6 +35,7 @@
     <Compile Include="EventSource.cs" />
     <Compile Include="ServerSentEventBuilder.cs" />
     <Compile Include="EventStreamReader.cs" />
+    <Compile Include="HttpWebResponseExtensions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
