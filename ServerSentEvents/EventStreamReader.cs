@@ -5,11 +5,8 @@ using System;
 using System.Net;
 using System.Net.Cache;
 using System.IO;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ServerSentEvents
 {
