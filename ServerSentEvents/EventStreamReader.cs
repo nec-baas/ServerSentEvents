@@ -50,20 +50,9 @@ namespace ServerSentEvents
 
         private IObservable<string> Read(HttpWebResponse webResponse)
         {
-            return Observable.Create<string>(async (observer, token) =>
-            {
-                using (var reader = new StreamReader(webResponse.GetResponseStream()))
-                {
-                    string line;
-                    while (!token.IsCancellationRequested)
-                    {
-                        line = await reader.ReadLineAsync();
-                        observer.OnNext(line);
-                        if (line == null)
-                            break;
-                    }
-                }
-            });
+            return Observable.Using(
+                () => new StreamReader(webResponse.GetResponseStream()),
+                reader => Observable.FromAsync(reader.ReadLineAsync).Repeat().TakeWhile(line => line != null));
         }
 
         public IObservable<string> ReadLines()
