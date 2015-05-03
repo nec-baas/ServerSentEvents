@@ -73,15 +73,9 @@ namespace ServerSentEvents
                 {
                     stateSubject.OnNext(EventSourceState.OPEN);
                     return Read(webResponse);
-                }).Catch(new Func<Exception, IObservable<string>>(e =>
-                {
-                    // FIXME: Use a logger instead of Console.Error.
-                    // Log unexpected error.
-                    Console.Error.WriteLine(e);
-                    return Observable.Empty<string>();
-                })).Finally(() =>
+                }).Finally(() =>
                     stateSubject.OnNext(EventSourceState.CLOSED)
-                ).Concat(delay).Repeat();
+                ).OnErrorResumeNext(delay).Repeat();
         }
     }
 }
