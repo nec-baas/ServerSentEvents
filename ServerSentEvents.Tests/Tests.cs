@@ -1,10 +1,13 @@
 ﻿// Copyright (c) Kwang Yul Seo. All rights reserved.
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Reactive.Testing;
 using NUnit.Framework;
 using System;
 using System.Net;
 using System.IO;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace ServerSentEvents.Tests
@@ -78,54 +81,81 @@ namespace ServerSentEvents.Tests
             }
         }
 
+        private IObservable<ServerSentEvent> GetEventObservable(EventSource es)
+        {
+            var sseObs = Observable.FromEventPattern<EventHandler<ServerSentEventReceivedEventArgs>, ServerSentEventReceivedEventArgs>(
+                h => es.EventReceived += h, h => es.EventReceived -= h)
+                .Select(p => p.EventArgs.Message);
+            var closeObs = Observable.FromEventPattern<EventHandler<StateChangedEventArgs>, StateChangedEventArgs>(
+                h => es.StateChanged += h, h => es.StateChanged -= h)
+                .Select(p => p.EventArgs.State)
+                .Where(state => state == EventSourceState.CLOSED);
+            var testObs = sseObs.TakeUntil(closeObs);
+
+            return testObs;
+        }
+
         [Test]
         public void TestEventSource()
         {
-            DataRecorder dataRecorder = new DataRecorder("0", "1", "2");
-            StateTransitionRecorder stateRecorder = new StateTransitionRecorder(
-                EventSourceState.CONNECTING, EventSourceState.OPEN, EventSourceState.CLOSED);
+            var scheduler = new TestScheduler();
+            var testObserver = scheduler.CreateObserver<string>();
 
             using (var es = new EventSource(new Uri(baseUri, "/simple")))
             {
-                es.StateChanged += stateRecorder.StateChanged;
-                es.EventReceived += dataRecorder.EventReceived;
+                var testObs = GetEventObservable(es).Select(sse => sse.Data);
+                testObs.Subscribe(testObserver.AsObserver());
+
                 es.Start();
-                dataRecorder.Wait(5000);
-                stateRecorder.Wait(5000);
+                testObs.Wait();
             }
 
-            stateRecorder.Assert();
-            dataRecorder.Assert();
+            Assert.AreEqual(4, testObserver.Messages.Count);
+            Assert.AreEqual(Notification.CreateOnNext("0"), testObserver.Messages[0].Value);
+            Assert.AreEqual(Notification.CreateOnNext("1"), testObserver.Messages[1].Value);
+            Assert.AreEqual(Notification.CreateOnNext("2"), testObserver.Messages[2].Value);
+            Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[3].Value);
         }
 
         [Test]
         public void TestMultiLineData()
         {
-            DataRecorder dataRecorder = new DataRecorder("1\n2", "3\n4");
+            var scheduler = new TestScheduler();
+            var testObserver = scheduler.CreateObserver<string>();
 
             using (var es = new EventSource(new Uri(baseUri, "/multiLineData")))
             {
-                es.EventReceived += dataRecorder.EventReceived;
+                var testObs = GetEventObservable(es).Select(sse => sse.Data);
+                testObs.Subscribe(testObserver.AsObserver());
+
                 es.Start();
-                dataRecorder.Wait(5000);
+                testObs.Wait();
             }
 
-            dataRecorder.Assert();
+            Assert.AreEqual(3, testObserver.Messages.Count);
+            Assert.AreEqual(Notification.CreateOnNext("1\n2"), testObserver.Messages[0].Value);
+            Assert.AreEqual(Notification.CreateOnNext("3\n4"), testObserver.Messages[1].Value);
+            Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[2].Value);
         }
 
         [Test]
         public void TestComments()
         {
-            DataRecorder dataRecorder = new DataRecorder("1");
+            var scheduler = new TestScheduler();
+            var testObserver = scheduler.CreateObserver<string>();
 
             using (var es = new EventSource(new Uri(baseUri, "/comments")))
             {
-                es.EventReceived += dataRecorder.EventReceived;
+                var testObs = GetEventObservable(es).Select(sse => sse.Data);
+                testObs.Subscribe(testObserver.AsObserver());
+
                 es.Start();
-                dataRecorder.Wait(5000);
+                testObs.Wait();
             }
 
-            dataRecorder.Assert();
+            Assert.AreEqual(2, testObserver.Messages.Count);
+            Assert.AreEqual(Notification.CreateOnNext("1"), testObserver.Messages[0].Value);
+            Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[1].Value);
         }
     }
 }
