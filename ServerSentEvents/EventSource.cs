@@ -152,6 +152,15 @@ namespace ServerSentEvents
             this.Stop();
         }
 
+        /// <summary>
+        /// エラー発生時の処理
+        /// </summary>
+        /// <param name="Callback">エラー検知用コールバック</param>
+        public void RegisterOnError(OnErrorReceived Callback)
+        {
+
+        }
+
         private void OnEventReceived(ServerSentEvent sse)
         {
             if (EventReceived != null)
