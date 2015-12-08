@@ -17,6 +17,9 @@ namespace ServerSentEvents
 
         private readonly Uri uri;
         private readonly Subject<EventSourceState> stateSubject = new Subject<EventSourceState>();
+        
+        // 切断用に使うHttpWebResponse
+        private HttpWebResponse WebResponse;
 
         public IObservable<EventSourceState> StateObservable { get { return stateSubject; } }
 
@@ -63,6 +66,17 @@ namespace ServerSentEvents
         }
 
         /// <summary>
+        /// SSE Pushサーバと切断する
+        /// </summary>
+        public void Close()
+        {
+            if (this.WebResponse != null)
+            {
+                this.WebResponse.Close();
+            }
+        }
+
+        /// <summary>
         /// Exponential Backoff 実行メソッド
         /// </summary>
         public static readonly Func<int, TimeSpan> ExponentialBackoff = n => TimeSpan.FromSeconds(Math.Pow(n, 2));
@@ -86,6 +100,8 @@ namespace ServerSentEvents
                 .SelectMany(webResponse =>
                 {
                     stateSubject.OnNext(EventSourceState.OPEN);
+                    // 切断用にHttpWebResponseを保持
+                    this.WebResponse = webResponse;
                     // 接続施行回数を初期化
                     this.attempt = 0;
                     return Read(webResponse);

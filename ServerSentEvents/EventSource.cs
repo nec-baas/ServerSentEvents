@@ -144,7 +144,10 @@ namespace ServerSentEvents
 
         public void Stop()
         {
+            //SSE Pushサーバとの接続を切断する
+            reader.Close();
             readSubscription.Dispose();
+
             // 接続施行回数をリセット
             reader.attempt = 0;
         }
