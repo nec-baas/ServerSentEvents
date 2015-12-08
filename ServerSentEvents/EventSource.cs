@@ -145,6 +145,8 @@ namespace ServerSentEvents
         public void Stop()
         {
             readSubscription.Dispose();
+            // 接続施行回数をリセット
+            reader.attempt = 0;
         }
 
         public void Dispose()

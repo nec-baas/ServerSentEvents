@@ -62,16 +62,32 @@ namespace ServerSentEvents
                 && response.GetContentTypeIgnoringMimeType() == "text/event-stream";
         }
 
+        /// <summary>
+        /// Exponential Backoff 実行メソッド
+        /// </summary>
+        public static readonly Func<int, TimeSpan> ExponentialBackoff = n => TimeSpan.FromSeconds(Math.Pow(n, 2));
+        
+        /// <summary>
+        /// 接続施行回数
+        /// </summary>
+        public int attempt = 0;
+       
+        /// <summary>
+        /// SSE Pushサーバと接続し、メッセージを受信する
+        /// </summary>
+        /// <returns></returns>
         public IObservable<string> ReadLines()
         {
-            var delay = Observable.Defer(() =>
-                Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(ReconnectionTime))
-            );
+            Func<int, TimeSpan> strategy = ExponentialBackoff;
+            var delay = Observable.Defer(() => Observable.Empty<string>().DelaySubscription(strategy(++attempt)));
+
             return Request()
                 .Where(IsEventStream)
                 .SelectMany(webResponse =>
                 {
                     stateSubject.OnNext(EventSourceState.OPEN);
+                    // 接続施行回数を初期化
+                    this.attempt = 0;
                     return Read(webResponse);
                 }).Finally(() =>
                     stateSubject.OnNext(EventSourceState.CLOSED)
