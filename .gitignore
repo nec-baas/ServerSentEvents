@@ -5,3 +5,6 @@ packages
 .nuget
 TestResult.xml
 .paket/paket.exe
+
+*.suo
+*.user
