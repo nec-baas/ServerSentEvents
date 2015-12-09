@@ -12,7 +12,10 @@ namespace ServerSentEvents
 {
     sealed class EventStreamReader
     {
+        // 再接続時間(milli second)
         public int ReconnectionTime { get; set; }
+        // 再接続時間のデフォルト値(milli second)
+        public int DefaultReconnectionTime { get; private set; }
         public string LastEventId { get; set; }
 
         private readonly Uri uri;
@@ -27,8 +30,8 @@ namespace ServerSentEvents
         {
             this.uri = uri;
 
-            const int DefaultReconnectionTime = 3000; // in milliseconds
-            ReconnectionTime = DefaultReconnectionTime;
+            this.DefaultReconnectionTime = 3000; // in milliseconds
+            ReconnectionTime = this.DefaultReconnectionTime;
         }
 
         private IObservable<HttpWebResponse> Request()
@@ -93,7 +96,21 @@ namespace ServerSentEvents
         public IObservable<string> ReadLines()
         {
             Func<int, TimeSpan> strategy = ExponentialBackoff;
-            var delay = Observable.Defer(() => Observable.Empty<string>().DelaySubscription(strategy(++attempt)));
+
+            var delay = Observable.Defer(() =>
+            {
+                // 再接続時間が初期値の場合はExponential Backoffで再接続
+                if (this.ReconnectionTime == this.DefaultReconnectionTime)
+                {
+                    return Observable.Empty<string>().DelaySubscription(strategy(++attempt));
+                }
+                // サーバからリトライ値が設定された場合は接続成功するまでその値で再接続
+                else
+                {
+                    return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
+                }
+
+            });
 
             return Request()
                 .Where(IsEventStream)
@@ -102,6 +119,8 @@ namespace ServerSentEvents
                     stateSubject.OnNext(EventSourceState.OPEN);
                     // 切断用にHttpWebResponseを保持
                     this.WebResponse = webResponse;
+                    // 再接続時間を初期化
+                    this.ReconnectionTime = this.DefaultReconnectionTime;
                     // 接続施行回数を初期化
                     this.attempt = 0;
                     return Read(webResponse);
@@ -109,5 +128,6 @@ namespace ServerSentEvents
                     stateSubject.OnNext(EventSourceState.CLOSED)
                 ).OnErrorResumeNext(delay).Repeat();
         }
+
     }
 }
