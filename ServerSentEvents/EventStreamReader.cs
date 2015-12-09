@@ -7,6 +7,7 @@ using System.Net.Cache;
 using System.IO;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text;
 
 namespace ServerSentEvents
 {
@@ -34,7 +35,15 @@ namespace ServerSentEvents
             ReconnectionTime = this.DefaultReconnectionTime;
         }
 
-        private IObservable<HttpWebResponse> Request()
+        // Basic認証ヘッダをセットする
+        public void SetBasicAuthHeader(WebRequest request, string userName, string userPassword)
+        {
+            string authInfo = userName + ":" + userPassword;
+            authInfo = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
+            request.Headers["Authorization"] = "Basic " + authInfo;
+        }
+
+        private IObservable<HttpWebResponse> Request(string Username, string Password)
         {
             return Observable.Defer(() =>
             {
@@ -46,7 +55,11 @@ namespace ServerSentEvents
                 webRequest.Method = "GET";
                 if (!string.IsNullOrEmpty(LastEventId))
                     webRequest.Headers["Last-Event-ID"] = LastEventId;
-
+                // Username, Passwordが設定された時はBasic認証を行う
+                if (!string.IsNullOrEmpty(Username) && !string.IsNullOrEmpty(Password))
+                {
+                    SetBasicAuthHeader(webRequest, Username, Password);
+                }
                 stateSubject.OnNext(EventSourceState.CONNECTING);
 
                 return Observable.FromAsync(webRequest.GetResponseAsync).Cast<HttpWebResponse>();
@@ -93,7 +106,7 @@ namespace ServerSentEvents
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
         /// <returns></returns>
-        public IObservable<string> ReadLines()
+        public IObservable<string> ReadLines(string Username, string Password)
         {
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
@@ -112,7 +125,7 @@ namespace ServerSentEvents
 
             });
 
-            return Request()
+            return Request(Username, Password)
                 .Where(IsEventStream)
                 .SelectMany(webResponse =>
                 {

@@ -118,11 +118,11 @@ namespace ServerSentEvents
             OnEventReceived(sse);
         }
 
-        public void Start()
+        public void Start(string Username, string Password)
         {
             var closer = new Subject<Unit>();
             readSubscription = reader
-                .ReadLines()
+                .ReadLines(Username, Password)
                 .GroupBy(string.IsNullOrEmpty)
                 .Subscribe(g =>
                 {
