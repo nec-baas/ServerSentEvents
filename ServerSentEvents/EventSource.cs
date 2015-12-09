@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -93,8 +94,10 @@ namespace ServerSentEvents
 
         private readonly EventStreamReader reader;
         private IDisposable readSubscription;
+        public OnErrorReceived OnErrorCallback { get; private set; }
 
         public EventSourceState ReadyState { get; private set; }
+
 
         public EventSource(Uri uri)
         {
@@ -118,11 +121,33 @@ namespace ServerSentEvents
             OnEventReceived(sse);
         }
 
+        // サーバとの切断(Stop())を呼ぶために、本クラスでOnErrorを一度受け取る
+        private class InnerOnErrorCallback : OnErrorReceived
+        {
+            private EventSource parent;
+            public InnerOnErrorCallback()
+            {
+            }
+
+            public InnerOnErrorCallback(EventSource parent)
+            {
+                this.parent = parent;
+            }
+
+            public void OnError(HttpStatusCode StatusCode, HttpWebResponse Response)
+            {
+                // サーバと切断する
+                parent.Stop();
+                // エラーコールバックを実行する
+                parent.OnErrorCallback.OnError(StatusCode, Response);
+            }
+        }
+
         public void Start(string Username, string Password)
         {
             var closer = new Subject<Unit>();
             readSubscription = reader
-                .ReadLines(Username, Password)
+                .ReadLines(Username, Password, new InnerOnErrorCallback(this))
                 .GroupBy(string.IsNullOrEmpty)
                 .Subscribe(g =>
                 {
@@ -163,7 +188,7 @@ namespace ServerSentEvents
         /// <param name="Callback">エラー検知用コールバック</param>
         public void RegisterOnError(OnErrorReceived Callback)
         {
-
+            this.OnErrorCallback = Callback;
         }
 
         private void OnEventReceived(ServerSentEvent sse)

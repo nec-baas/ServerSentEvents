@@ -18,6 +18,8 @@ namespace ServerSentEvents
         // 再接続時間のデフォルト値(milli second)
         public int DefaultReconnectionTime { get; private set; }
         public string LastEventId { get; set; }
+        // エラー検知用コールバック
+        private OnErrorReceived OnErrorCallback;
 
         private readonly Uri uri;
         private readonly Subject<EventSourceState> stateSubject = new Subject<EventSourceState>();
@@ -73,10 +75,17 @@ namespace ServerSentEvents
                 reader => Observable.FromAsync(reader.ReadLineAsync).Repeat().TakeWhile(line => line != null));
         }
 
-        private static bool IsEventStream(HttpWebResponse response)
+        private bool IsEventStream(HttpWebResponse response)
         {
-            // FIXME: Handle status code according to
-            // http://www.w3.org/TR/eventsource/#processing-model
+            // HttpStatusCode==OK 以外はエラーコールバックを実行する
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                // エラーをコールバックする
+                if (this.OnErrorCallback != null)
+                {
+                    this.OnErrorCallback.OnError(response.StatusCode, response);
+                }
+            }
             return response.StatusCode == HttpStatusCode.OK
                 && response.GetContentTypeIgnoringMimeType() == "text/event-stream";
         }
@@ -106,8 +115,9 @@ namespace ServerSentEvents
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
         /// <returns></returns>
-        public IObservable<string> ReadLines(string Username, string Password)
+        public IObservable<string> ReadLines(string Username, string Password, OnErrorReceived OnErrorCallback)
         {
+            this.OnErrorCallback = OnErrorCallback;
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
             var delay = Observable.Defer(() =>
