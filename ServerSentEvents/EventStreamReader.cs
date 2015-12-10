@@ -91,17 +91,6 @@ namespace ServerSentEvents
         }
 
         /// <summary>
-        /// SSE Pushサーバと切断する
-        /// </summary>
-        public void Close()
-        {
-            if (this.WebResponse != null)
-            {
-                this.WebResponse.Close();
-            }
-        }
-
-        /// <summary>
         /// Exponential Backoff 実行メソッド
         /// </summary>
         public static readonly Func<int, TimeSpan> ExponentialBackoff = n => TimeSpan.FromSeconds(Math.Pow(n, 2));

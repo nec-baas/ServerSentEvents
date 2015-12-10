@@ -94,6 +94,7 @@ namespace ServerSentEvents
 
         private readonly EventStreamReader reader;
         private IDisposable readSubscription;
+        private IDisposable groupBySubscription;
         public OnErrorReceived OnErrorCallback { get; private set; }
 
         public EventSourceState ReadyState { get; private set; }
@@ -146,8 +147,15 @@ namespace ServerSentEvents
         public void Start(string Username, string Password)
         {
             var closer = new Subject<Unit>();
+            var subject = new Subject<string>();
+
             readSubscription = reader
                 .ReadLines(Username, Password, new InnerOnErrorCallback(this))
+                .Subscribe(subject);
+
+            // readSubscriptionをDispose()してもGroupByで生成したSubscriptionはDisposeしない(バグ？)ため、
+            // readSubscriptionとgroupBySubscriptionに分け、Stop()時に両方Dispose()する。
+            groupBySubscription = subject
                 .GroupBy(string.IsNullOrEmpty)
                 .Subscribe(g =>
                 {
@@ -169,9 +177,9 @@ namespace ServerSentEvents
 
         public void Stop()
         {
-            //SSE Pushサーバとの接続を切断する
-            reader.Close();
+            // SSE Pushサーバとの接続を切断する
             readSubscription.Dispose();
+            groupBySubscription.Dispose();
 
             // 接続施行回数をリセット
             reader.attempt = 0;
