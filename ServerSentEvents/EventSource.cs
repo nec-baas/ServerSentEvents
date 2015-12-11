@@ -116,9 +116,10 @@ namespace ServerSentEvents
             if (!string.IsNullOrEmpty(sse.LastEventId))
                 reader.LastEventId = sse.LastEventId;
 
-            if (sse.Retry.HasValue)
+            if (sse.Retry.HasValue){
                 reader.ReconnectionTime = sse.Retry.Value;
-
+                reader.RetrySetBySseFlag = true;
+            }
             OnEventReceived(sse);
         }
 
@@ -137,8 +138,25 @@ namespace ServerSentEvents
 
             public void OnError(HttpStatusCode StatusCode, HttpWebResponse Response)
             {
-                // サーバと切断する
-                parent.Stop();
+                switch (StatusCode)
+                {
+                    case HttpStatusCode.InternalServerError:
+                        // 何もしない⇒自動再接続処理を行う
+                        break;
+                    case HttpStatusCode.ServiceUnavailable:
+                        // リトライ値をセットして、自動再接続を行う
+                        if (!string.IsNullOrEmpty(Response.Headers["Retry-After"]))
+                        {
+                            parent.reader.ReconnectionTime = int.Parse(Response.Headers["Retry-After"]);
+                            parent.reader.RetrySetByServerFlag = true;
+                        }
+                        break;
+                    default :
+                        // サーバと切断する
+                        parent.Stop();
+                        break;
+                }
+
                 // エラーコールバックを実行する
                 parent.OnErrorCallback.OnError(StatusCode, Response);
             }
