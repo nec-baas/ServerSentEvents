@@ -97,9 +97,14 @@ namespace ServerSentEvents
 
         /// <summary>
         /// Exponential Backoff 実行メソッド
+        /// 最大値は144。(n=12)
         /// </summary>
-        public static readonly Func<int, TimeSpan> ExponentialBackoff = n => TimeSpan.FromSeconds(Math.Pow(n, 2));
-        
+        public static readonly Func<int, TimeSpan> ExponentialBackoff = (n =>
+            {
+                if (n > 12) n = 12;
+                return TimeSpan.FromSeconds(Math.Pow(n, 2));
+            });
+
         /// <summary>
         /// 接続施行回数
         /// </summary>
