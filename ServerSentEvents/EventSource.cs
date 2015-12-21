@@ -123,7 +123,7 @@ namespace ServerSentEvents
             OnEventReceived(sse);
         }
 
-        // サーバとの切断(Stop())を呼ぶために、本クラスでOnErrorを一度受け取る
+        // サーバとの切断(Stop())を呼ぶために、本クラスでOnErrorを一度受け取りparentを設定する
         private class InnerOnErrorCallback : OnErrorReceived
         {
             private EventSource parent;
@@ -148,6 +148,7 @@ namespace ServerSentEvents
                         if (!string.IsNullOrEmpty(Response.Headers["Retry-After"]))
                         {
                             parent.reader.ReconnectionTime = int.Parse(Response.Headers["Retry-After"]);
+                            // リトライフラグセット
                             parent.reader.RetrySetByServerFlag = true;
                         }
                         break;
@@ -162,13 +163,14 @@ namespace ServerSentEvents
             }
         }
 
-        public void Start(string Username, string Password)
+        public void Start(string username, string password)
         {
             var closer = new Subject<Unit>();
             var subject = new Subject<string>();
 
             readSubscription = reader
-                .ReadLines(Username, Password, new InnerOnErrorCallback(this))
+                // 認証情報とエラーコールバックを登録
+                .ReadLines(username, password, new InnerOnErrorCallback(this))
                 .Subscribe(subject);
 
             // readSubscriptionをDispose()してもGroupByで生成したSubscriptionはDisposeしない(バグ？)ため、
@@ -193,14 +195,11 @@ namespace ServerSentEvents
                 });
         }
 
+        // SSE Pushサーバとの接続を切断する
         public void Stop()
         {
-            // SSE Pushサーバとの接続を切断する
             readSubscription.Dispose();
             groupBySubscription.Dispose();
-
-            // 接続施行回数をリセット
-            reader.attempt = 0;
         }
 
         public void Dispose()

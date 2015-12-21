@@ -108,17 +108,18 @@ namespace ServerSentEvents
         /// <summary>
         /// 接続施行回数
         /// </summary>
-        public int attempt = 0;
+        private int attempt = 0;
        
         /// <summary>
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
         /// <returns></returns>
-        public IObservable<string> ReadLines(string Username, string Password, OnErrorReceived OnErrorCallback)
+        public IObservable<string> ReadLines(string username, string password, OnErrorReceived OnErrorCallback)
         {
             this.OnErrorCallback = OnErrorCallback;
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
+            // エラー時の処理
             var delay = Observable.Defer(() =>
             {
                 // もしWebResponseが存在する場合はクローズする
@@ -147,13 +148,16 @@ namespace ServerSentEvents
 
             });
 
-            return Request(Username, Password)
+            return Request(username, password)
                 .Where(IsEventStream)
                 .SelectMany(webResponse =>
                 {
                     stateSubject.OnNext(EventSourceState.OPEN);
                     // 再接続時間を初期化
-                    this.ReconnectionTime = this.DefaultReconnectionTime;
+                    if (!RetrySetBySseFlag)
+                    {
+                        this.ReconnectionTime = this.DefaultReconnectionTime;
+                    }
                     // 接続施行回数を初期化
                     this.attempt = 0;
                     // リトライフラグを初期化
