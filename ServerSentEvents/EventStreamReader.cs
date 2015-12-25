@@ -17,11 +17,14 @@ namespace ServerSentEvents
         public int ReconnectionTime { get; set; }
         // 再接続時間のデフォルト値(milli second)
         public int DefaultReconnectionTime { get; private set; }
-        // サーバから503エラーでリトライ値が設定された場合のフラグ
-        public bool RetrySetByServerFlag = false;
-        // SSEメッセージでリトライ値が設定された場合のフラグ
-        public bool RetrySetBySseFlag = false;
+        // サーバから503エラーでリトライ値が設定された場合、またはSSEメッセージでリトライ値が設定された場合のフラグ
+        public bool RetryFlag = false;
+        // イベントID
         public string LastEventId { get; set; }
+
+        // 接続施行回数
+        private int attempt = 0;
+
         // エラー検知用コールバック
         private OnErrorReceived OnErrorCallback;
         private HttpWebResponse WebResponse;
@@ -104,11 +107,6 @@ namespace ServerSentEvents
                 if (n > 12) n = 12;
                 return TimeSpan.FromSeconds(Math.Pow(n, 2));
             });
-
-        /// <summary>
-        /// 接続施行回数
-        /// </summary>
-        private int attempt = 0;
        
         /// <summary>
         /// SSE Pushサーバと接続し、メッセージを受信する
@@ -128,19 +126,23 @@ namespace ServerSentEvents
                     this.WebResponse.Close();
                 }
 
-                // サーバから503エラーでリトライ値が設定された場合は接続成功するまでその値で再接続
-                // 接続完了時にフラグリセット
-                if (this.RetrySetByServerFlag)
+                // サーバから503エラーでヘッダにリトライ値が設定された場合、
+                // またはSSEメッセージで"retry"値が設定された場合はその値で待つ(1度のみ)
+                if (this.RetryFlag)
                 {
+                    // リトライフラグと接続試行回数をリセット
+                    this.RetryFlag = false;
+                    this.attempt = 0;
+
                     return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
                 }
                 // SSEメッセージで"retry"値が設定された場合は常にその値を使って再接続
-                // フラグはリセットしない
-                if (this.RetrySetBySseFlag)
-                {
-                    return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
-                }
-                // リトライ値が初期値の場合はExponential Backoff で再接続
+                //if (this.RetrySetBySseFlag)
+                //{
+                //    return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
+                //}
+
+                // それ以外は Exponential Backoff で待つ
                 else
                 {
                     return Observable.Empty<string>().DelaySubscription(strategy(++attempt));
@@ -154,14 +156,10 @@ namespace ServerSentEvents
                 {
                     stateSubject.OnNext(EventSourceState.OPEN);
                     // 再接続時間を初期化
-                    if (!RetrySetBySseFlag)
-                    {
-                        this.ReconnectionTime = this.DefaultReconnectionTime;
-                    }
-                    // 接続施行回数を初期化
+                    this.ReconnectionTime = this.DefaultReconnectionTime;
+                    
+                    // 接続施行回数をリセット
                     this.attempt = 0;
-                    // リトライフラグを初期化
-                    this.RetrySetByServerFlag = false;
                     return Read(webResponse);
                 }).Finally(() =>
                     stateSubject.OnNext(EventSourceState.CLOSED)

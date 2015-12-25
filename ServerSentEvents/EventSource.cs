@@ -118,7 +118,8 @@ namespace ServerSentEvents
 
             if (sse.Retry.HasValue){
                 reader.ReconnectionTime = sse.Retry.Value;
-                reader.RetrySetBySseFlag = true;
+                // リトライフラグセット
+                reader.RetryFlag = true;
             }
             OnEventReceived(sse);
         }
@@ -149,7 +150,7 @@ namespace ServerSentEvents
                         {
                             parent.reader.ReconnectionTime = int.Parse(Response.Headers["Retry-After"]);
                             // リトライフラグセット
-                            parent.reader.RetrySetByServerFlag = true;
+                            parent.reader.RetryFlag = true;
                         }
                         break;
                     default :
@@ -198,8 +199,14 @@ namespace ServerSentEvents
         // SSE Pushサーバとの接続を切断する
         public void Stop()
         {
-            readSubscription.Dispose();
-            groupBySubscription.Dispose();
+            if (readSubscription != null)
+            {
+                readSubscription.Dispose();
+            }
+            if (groupBySubscription != null)
+            {
+                groupBySubscription.Dispose();
+            }
         }
 
         public void Dispose()
