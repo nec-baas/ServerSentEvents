@@ -11,6 +11,7 @@ using System.Text;
 
 namespace ServerSentEvents
 {
+    // SSEサーバとの接続状態
     public enum EventSourceState
     {
         CONNECTING,
@@ -18,6 +19,7 @@ namespace ServerSentEvents
         CLOSED
     }
 
+    // SSEサーバとの接続状態が変更した際のイベント
     public class StateChangedEventArgs : EventArgs
     {
         private readonly EventSourceState state;
@@ -38,11 +40,16 @@ namespace ServerSentEvents
         }
     }
 
+    // SSEサーバからの受信内容
     public sealed class ServerSentEvent
     {
+        // イベントID
         private readonly string lastEventId;
+        // イベント名
         private readonly string eventType;
+        // データ
         private readonly string data;
+        // リトライ値
         private readonly int? retry;
         private readonly bool isEmptyData;
 
@@ -76,6 +83,7 @@ namespace ServerSentEvents
         }
     }
 
+    // SSEサーバからメッセージ受信した際のイベント
     public class ServerSentEventReceivedEventArgs : EventArgs
     {
         private readonly ServerSentEvent message;
@@ -88,6 +96,7 @@ namespace ServerSentEvents
         }
     }
 
+    // EventSource
     public sealed class EventSource : IDisposable
     {
         public event EventHandler<StateChangedEventArgs> StateChanged;
@@ -109,6 +118,7 @@ namespace ServerSentEvents
             reader.StateObservable.Subscribe(OnStateChanged);
         }
 
+        // 受信内容を取り出す処理
         private void DispatchEvent(ServerSentEvent sse)
         {
             if (sse.IsEmptyData)
@@ -165,6 +175,11 @@ namespace ServerSentEvents
             }
         }
 
+        /// <summary>
+        /// 受信開始
+        /// </summary>
+        /// <param name="username">Basic認証に使用するユーザ名</param>
+        /// <param name="password">Basic認証に使用するパスワード</param>
         public void Start(string username, string password)
         {
             Debug.WriteLine("Start() <start> username=" + username);
@@ -199,7 +214,9 @@ namespace ServerSentEvents
             Debug.WriteLine("Start() <end>");
         }
 
-        // SSE Pushサーバとの接続を切断する
+        /// <summary>
+        ///  SSE Pushサーバとの接続を切断する
+        /// </summary>
         public void Stop()
         {
             Debug.WriteLine("Stop() <start>");

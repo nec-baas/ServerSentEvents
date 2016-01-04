@@ -80,6 +80,11 @@ namespace ServerSentEvents
                 reader => Observable.FromAsync(reader.ReadLineAsync).Repeat().TakeWhile(line => line != null));
         }
 
+        /// <summary>
+        /// 受信したデータがSSEデータかどうかをチェック
+        /// </summary>
+        /// <param name="response">受信データ</param>
+        /// <returns>SSEデータである場合はtrue</returns>
         private bool IsEventStream(HttpWebResponse response)
         {
             // 削除用に、WebResponseを保持する
@@ -108,10 +113,15 @@ namespace ServerSentEvents
                 return TimeSpan.FromSeconds(Math.Pow(n, 2));
             });
        
+
+         
         /// <summary>
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
-        /// <returns></returns>
+        /// <param name="username">Basic認証に使用するユーザ名</param>
+        /// <param name="password">Basic認証に使用するパスワード</param>
+        /// <param name="OnErrorCallback">エラーコールバック</param>
+        /// <returns>受信メッセージ</returns>
         public IObservable<string> ReadLines(string username, string password, OnErrorReceived OnErrorCallback)
         {
             this.OnErrorCallback = OnErrorCallback;
