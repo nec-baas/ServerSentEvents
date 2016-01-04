@@ -2,6 +2,7 @@
 // Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -166,6 +167,7 @@ namespace ServerSentEvents
 
         public void Start(string username, string password)
         {
+            Debug.WriteLine("Start() <start> username=" + username);
             var closer = new Subject<Unit>();
             var subject = new Subject<string>();
 
@@ -194,11 +196,14 @@ namespace ServerSentEvents
                                 .Subscribe(DispatchEvent));
                     }
                 });
+            Debug.WriteLine("Start() <end>");
         }
 
         // SSE Pushサーバとの接続を切断する
         public void Stop()
         {
+            Debug.WriteLine("Stop() <start>");
+
             if (readSubscription != null)
             {
                 readSubscription.Dispose();
@@ -207,6 +212,8 @@ namespace ServerSentEvents
             {
                 groupBySubscription.Dispose();
             }
+
+            Debug.WriteLine("Stop() <end>");
         }
 
         public void Dispose()
@@ -220,7 +227,9 @@ namespace ServerSentEvents
         /// <param name="Callback">エラー検知用コールバック</param>
         public void RegisterOnError(OnErrorReceived Callback)
         {
+            Debug.WriteLine("RegisterOnError() <start>");
             this.OnErrorCallback = Callback;
+            Debug.WriteLine("RegisterOnError() <end>");
         }
 
         private void OnEventReceived(ServerSentEvent sse)
