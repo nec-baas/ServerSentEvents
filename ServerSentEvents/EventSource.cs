@@ -164,14 +164,13 @@ namespace ServerSentEvents
                             parent.reader.RetryFlag = true;
                         }
                         break;
-                    default :
+                    default:
                         // サーバと切断する
                         parent.Stop();
+                        // エラーコールバックを実行する
+                        parent.OnErrorCallback.OnError(StatusCode, Response);
                         break;
                 }
-
-                // エラーコールバックを実行する
-                parent.OnErrorCallback.OnError(StatusCode, Response);
             }
         }
 
