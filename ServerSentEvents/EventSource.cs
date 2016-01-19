@@ -103,7 +103,8 @@ namespace ServerSentEvents
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
 
         private readonly EventStreamReader reader;
-        private IDisposable readSubscription;
+        //private IDisposable readSubscription;
+        public IDisposable readSubscription;
         private IDisposable groupBySubscription;
         public OnErrorReceived OnErrorCallback { get; private set; }
 
@@ -220,13 +221,18 @@ namespace ServerSentEvents
         {
             Debug.WriteLine("Stop() <start>");
 
+            // コールバック実行
+            OnStateChanged(EventSourceState.CLOSED);
+
             if (readSubscription != null)
             {
                 readSubscription.Dispose();
+                readSubscription = null;
             }
             if (groupBySubscription != null)
             {
                 groupBySubscription.Dispose();
+                groupBySubscription = null;
             }
 
             Debug.WriteLine("Stop() <end>");

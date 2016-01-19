@@ -90,15 +90,6 @@ namespace ServerSentEvents
             // 削除用に、WebResponseを保持する
             this.WebResponse = response;
 
-            // HttpStatusCode==OK 以外はエラーコールバックを実行する
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                // エラーをコールバックする
-                if (this.OnErrorCallback != null)
-                {
-                    this.OnErrorCallback.OnError(response.StatusCode, response);
-                }
-            }
             return response.StatusCode == HttpStatusCode.OK
                 && response.GetContentTypeIgnoringMimeType() == "text/event-stream";
         }
@@ -112,9 +103,9 @@ namespace ServerSentEvents
                 if (n > 12) n = 12;
                 return TimeSpan.FromSeconds(Math.Pow(n, 2));
             });
-       
 
-         
+
+        IObservable<string> delay;
         /// <summary>
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
@@ -128,7 +119,7 @@ namespace ServerSentEvents
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
             // エラー時の処理
-            var delay = Observable.Defer(() =>
+            delay = Observable.Defer(() =>
             {
                 // もしWebResponseが存在する場合はクローズする
                 if (this.WebResponse != null)
@@ -167,14 +158,58 @@ namespace ServerSentEvents
                     stateSubject.OnNext(EventSourceState.OPEN);
                     // 再接続時間を初期化
                     this.ReconnectionTime = this.DefaultReconnectionTime;
-                    
+
                     // 接続施行回数をリセット
                     this.attempt = 0;
                     return Read(webResponse);
-                }).Finally(() =>
-                    stateSubject.OnNext(EventSourceState.CLOSED)
-                ).OnErrorResumeNext(delay).Repeat();
-        }
+                })
+                .Catch((Exception e) => ExecuteErrorCallback(e))
+                //.Concat(delay).Repeat();
+                //.Finally(() =>
+                //    stateSubject.OnNext(EventSourceState.CLOSED)
+                //)
+                .OnErrorResumeNext(delay).Repeat();
 
+        }
+        /*
+        //test
+        IObservable<HttpWebResponse> test = Observable.Defer(() =>
+        {
+            return Observable.Empty<HttpWebResponse>();
+        });
+
+        //test2
+        IObservable<HttpWebResponse> test2(WebException e)
+        {
+            // エラーをコールバックする
+            if (this.OnErrorCallback != null)
+            {
+                this.OnErrorCallback.OnError(((HttpWebResponse)e.Response).StatusCode, (HttpWebResponse)e.Response);
+            }
+            //Observable.
+            //return (IObservable<HttpWebResponse>)((HttpWebResponse)e.Response);
+            //return (HttpWebResponse)e.Response;
+            //return Observable.Empty<HttpWebResponse>();
+            throw e;
+            //return null;
+        }
+        */
+        // エラーコールバック実行
+        IObservable<string> ExecuteErrorCallback(Exception e)
+        {
+            WebException e2;
+            if (e.GetType() == typeof(WebException))
+            {
+                e2 = (WebException)e;
+
+                // エラーをコールバックする
+                if (e2.Response != null && this.OnErrorCallback != null)
+                {
+                    this.OnErrorCallback.OnError(((HttpWebResponse)e2.Response).StatusCode, (HttpWebResponse)e2.Response);
+                }
+            }
+
+            return Observable.Empty<string>();
+        }
     }
 }
