@@ -104,8 +104,6 @@ namespace ServerSentEvents
                 return TimeSpan.FromSeconds(Math.Pow(n, 2));
             });
 
-
-        IObservable<string> delay;
         /// <summary>
         /// SSE Pushサーバと接続し、メッセージを受信する
         /// </summary>
@@ -119,7 +117,7 @@ namespace ServerSentEvents
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
             // エラー時の処理
-            delay = Observable.Defer(() =>
+            var delay = Observable.Defer(() =>
             {
                 // もしWebResponseが存在する場合はクローズする
                 if (this.WebResponse != null)
