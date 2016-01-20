@@ -240,7 +240,6 @@ namespace ServerSentEvents
 
         public void Dispose()
         {
-            this.Stop();
         }
 
         /// <summary>

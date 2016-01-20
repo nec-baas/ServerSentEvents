@@ -20,18 +20,18 @@ namespace ServerSentEvents.Tests
         private readonly Uri baseUri = new Uri("http://localhost:8080");
         private TestWebServer ws;
         private string authString;
-        private bool isConnectingCalled;
-        private bool isOpenCalled;
-        private bool isClosedCalled;
+        private int ConnectionCalledCount;
+        private int OpenCalledCount;
+        private int ClosedCalledCount;
         private int try503Times;
         private const int DefaultRetryTime = 3000; //milli second
 
         [SetUp]
         public void ServerSetUp()
         {
-            isConnectingCalled = false;
-            isOpenCalled = false;
-            isClosedCalled = false;
+            ConnectionCalledCount = 0;
+            OpenCalledCount = 0;
+            ClosedCalledCount = 0;
             try503Times = 0;
 
             // Basic認証ヘッダ
@@ -240,15 +240,15 @@ namespace ServerSentEvents.Tests
                 {
                     if (e.State == EventSourceState.CONNECTING)
                     {
-                        isConnectingCalled = true;
+                        ConnectionCalledCount++;
                     }
                     if (e.State == EventSourceState.OPEN)
                     {
-                        isOpenCalled = true;
+                        OpenCalledCount++;
                     }
                     if (e.State == EventSourceState.CLOSED)
                     {
-                        isClosedCalled = true;
+                        ClosedCalledCount++;
                     }
                 };
 
@@ -259,9 +259,9 @@ namespace ServerSentEvents.Tests
 
                 //testObs.Wait();
             }
-            Assert.IsTrue(isConnectingCalled);
-            Assert.IsTrue(isOpenCalled);
-            Assert.IsTrue(isClosedCalled);
+            Assert.AreEqual(ConnectionCalledCount, 1);
+            Assert.AreEqual(OpenCalledCount, 1);
+            Assert.AreEqual(ClosedCalledCount, 1);
 
             //Assert.AreEqual(3, testObserver.Messages.Count);
             //Assert.AreEqual(Notification.CreateOnNext(EventSourceState.CONNECTING), testObserver.Messages[0].Value);
@@ -350,7 +350,7 @@ namespace ServerSentEvents.Tests
                 {
                     if (e.State == EventSourceState.CLOSED)
                     {
-                        isClosedCalled = true;
+                        ClosedCalledCount++;
                     }
                 };
 
@@ -370,7 +370,7 @@ namespace ServerSentEvents.Tests
                 }
                 */
                 Assert.IsTrue(errorCallback.isOnErrorCalled);
-                Assert.IsTrue(isClosedCalled);
+                Assert.AreEqual(ClosedCalledCount, 1);
                 Assert.AreEqual(errorCallback.stCode, HttpStatusCode.Unauthorized);
             }
         }
@@ -549,7 +549,7 @@ namespace ServerSentEvents.Tests
                 {
                     if (e.State == EventSourceState.CLOSED)
                     {
-                        isClosedCalled = true;
+                        ClosedCalledCount++;
                     }
                 };
 
@@ -567,7 +567,7 @@ namespace ServerSentEvents.Tests
 
                 // Check
                 Assert.IsNull(es.readSubscription);
-                Assert.IsTrue(isClosedCalled);
+                Assert.AreEqual(ClosedCalledCount, 1);
             }
         }
 
