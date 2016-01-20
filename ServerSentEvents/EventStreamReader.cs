@@ -161,7 +161,7 @@ namespace ServerSentEvents
                     this.attempt = 0;
                     return Read(webResponse);
                 })
-                .Catch((Exception e) => NotifyError(e))
+                .Catch((Exception e) => NotifyHttpError(e))
                 //.Concat(delay).Repeat();
                 //.Finally(() =>
                 //    stateSubject.OnNext(EventSourceState.CLOSED)
@@ -193,7 +193,7 @@ namespace ServerSentEvents
         }
         */
         // エラーコールバック実行
-        private IObservable<string> NotifyError(Exception e)
+        private IObservable<string> NotifyHttpError(Exception e)
         {
             WebException e2;
             if (e.GetType() == typeof(WebException))
