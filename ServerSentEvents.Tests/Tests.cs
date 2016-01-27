@@ -40,6 +40,7 @@ namespace ServerSentEvents.Tests
             ws = new TestWebServer(baseUri);
             ws.Start();
             ws.AddRoute("/simple", SimpleEventStream);
+            ws.AddRoute("/simpleWithAuthRequired", SimpleEventStreamBasicAuthRequired);
             ws.AddRoute("/multiLineData", MultiLineDataEventStream);
             ws.AddRoute("/comments", EventStreamWithComments);
             ws.AddRoute("/500error", SimpleEventStreamException500);
@@ -98,6 +99,31 @@ namespace ServerSentEvents.Tests
             }
 
             if (isUnAuthorized)
+            {
+                response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.OK;
+                response.ContentType = "text/event-stream";
+
+                using (var writer = new StreamWriter(response.OutputStream))
+                {
+                    writer.AutoFlush = true;
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        await writer.WriteAsync("data: " + i + "\n\n");
+                        await Task.Delay(1000);
+                    }
+                }
+            }
+        }
+
+        private async Task SimpleEventStreamBasicAuthRequired(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            // Basic認証ヘッダ確認
+            if (request.Headers["Authorization"] == null || !request.Headers["Authorization"].Equals(authString))
             {
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
             }
@@ -322,6 +348,42 @@ namespace ServerSentEvents.Tests
             Assert.AreEqual(Notification.CreateOnNext("0"), testObserver.Messages[0].Value);
             Assert.AreEqual(Notification.CreateOnNext("1"), testObserver.Messages[1].Value);
             Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[2].Value);
+        }
+
+        /// <summary>
+        /// 接続開始(Basic認証あり)(失敗)
+        /// Basic認証が必須の場合に認証ヘッダを設定しない場合、401エラーを返すこと
+        /// </summary>
+        [Test]
+        public void TestEventSourceWithNoAuthHeader()
+        {
+            var scheduler = new TestScheduler();
+            var testObserver = scheduler.CreateObserver<EventSourceState>();
+
+            using (var es = new EventSource(new Uri(baseUri, "/simpleWithAuthRequired")))
+            {
+                // エラーコールバック登録
+                OnErrorCallback errorCallback = new OnErrorCallback();
+                es.RegisterOnError(errorCallback);
+
+                // 接続状態変更通知登録
+                es.StateChanged += (sender, e) =>
+                {
+                    if (e.State == EventSourceState.CLOSED)
+                    {
+                        ClosedCalledCount++;
+                    }
+                };
+
+                es.Start(null, null);
+
+                // コールバック実行を待つ
+                Thread.Sleep(100);
+
+                Assert.IsTrue(errorCallback.isOnErrorCalled);
+                Assert.AreEqual(ClosedCalledCount, 1);
+                Assert.AreEqual(errorCallback.stCode, HttpStatusCode.Unauthorized);
+            }
         }
 
         /// <summary>
