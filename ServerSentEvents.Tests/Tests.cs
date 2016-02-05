@@ -162,7 +162,8 @@ namespace ServerSentEvents.Tests
                 await writer.WriteAsync("data: 2\n\n");
 
                 await writer.WriteAsync("data: 3\n");
-                await writer.WriteAsync("data: 4\n\n");
+                await writer.WriteAsync("data: 4\n");
+                await writer.WriteAsync("retry: 5000\n\n");
 
                 await writer.WriteAsync("data: 5\n");
                 await writer.WriteAsync("data: 6\n\n");
@@ -554,11 +555,11 @@ namespace ServerSentEvents.Tests
         public void TestMultiLineData()
         {
             var scheduler = new TestScheduler();
-            var testObserver = scheduler.CreateObserver<string>();
+            var testObserver = scheduler.CreateObserver<ServerSentEvent>();
 
             using (var es = new EventSource(new Uri(baseUri, "/multiLineData")))
             {
-                var testObs = GetEventObservableMulti(es).Select(sse => sse.Data);
+                var testObs = GetEventObservableMulti(es).Select(sse => sse);
                 testObs.Subscribe(testObserver.AsObserver());
 
                 es.Start(null, null);
@@ -566,9 +567,10 @@ namespace ServerSentEvents.Tests
             }
 
             Assert.AreEqual(3, testObserver.Messages.Count);
-            Assert.AreEqual(Notification.CreateOnNext("1\n2"), testObserver.Messages[0].Value);
-            Assert.AreEqual(Notification.CreateOnNext("3\n4"), testObserver.Messages[1].Value);
-            Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[2].Value);
+            Assert.AreEqual("1\n2", testObserver.Messages[0].Value.Value.Data);
+            Assert.AreEqual("3\n4", testObserver.Messages[1].Value.Value.Data);
+            Assert.AreEqual(5000, testObserver.Messages[1].Value.Value.Retry);
+            Assert.AreEqual(Notification.CreateOnCompleted<ServerSentEvent>(), testObserver.Messages[2].Value);
         }
 
         /// <summary>
