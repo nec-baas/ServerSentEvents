@@ -45,6 +45,7 @@ namespace ServerSentEvents.Tests
             ws.AddRoute("/comments", EventStreamWithComments);
             ws.AddRoute("/500error", SimpleEventStreamException500);
             ws.AddRoute("/503error", SimpleEventStreamException503);
+            ws.AddRoute("/ServerDisconnect", ServerDisconnect);
         }
 
         [TearDown]
@@ -120,6 +121,30 @@ namespace ServerSentEvents.Tests
             }
         }
 
+        private async Task ServerDisconnect(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            response.StatusCode = (int)HttpStatusCode.OK;
+            response.ContentType = "text/event-stream";
+
+            using (var writer = new StreamWriter(response.OutputStream))
+            {
+                writer.AutoFlush = true;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    await writer.WriteAsync("data: " + i + "\n\n");
+                    await Task.Delay(1000);
+                }
+                // サーバ終了
+                ws.Stop();
+
+                ws = new TestWebServer(baseUri);
+                ws.AddRoute("/ServerDisconnect", ServerDisconnect);
+
+                // サーバ開始
+                ws.Start();
+            }
+        }
         private async Task SimpleEventStreamBasicAuthRequired(HttpListenerRequest request, HttpListenerResponse response)
         {
             // Basic認証ヘッダ確認
@@ -632,6 +657,45 @@ namespace ServerSentEvents.Tests
                 // Check
                 Assert.IsNull(es.readSubscription);
                 Assert.AreEqual(ClosedCalledCount, 1);
+            }
+        }
+
+        /// <summary>
+        /// 接続開始(異常)
+        /// サーバから切断時に、自動再接続を行い、接続すること
+        /// </summary>
+        [Test]
+        public void TestEventSourceRetryWhenServerDisconnect()
+        {
+            var scheduler = new TestScheduler();
+            var testObserver = scheduler.CreateObserver<string>();
+            var testObserver2 = scheduler.CreateObserver<string>();
+
+            using (var es = new EventSource(new Uri(baseUri, "/ServerDisconnect")))
+            {
+                var testObs = GetEventObservable(es).Select(sse => sse.Data);
+                // testObsに通知があった場合に、testObserverに通知する
+                testObs.Subscribe(testObserver.AsObserver());
+
+                es.Start(null, null);
+
+                testObs.Wait();
+
+                Assert.AreEqual(3, testObserver.Messages.Count);
+                Assert.AreEqual(Notification.CreateOnNext("0"), testObserver.Messages[0].Value);
+                Assert.AreEqual(Notification.CreateOnNext("1"), testObserver.Messages[1].Value);
+                Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[2].Value);
+
+                var testObs2 = GetEventObservable(es).Select(sse => sse.Data);
+                // testObs2に通知があった場合に、testObserver2に通知する
+                testObs2.Subscribe(testObserver2.AsObserver());
+
+                testObs2.Wait();
+
+                Assert.AreEqual(3, testObserver2.Messages.Count);
+                Assert.AreEqual(Notification.CreateOnNext("0"), testObserver2.Messages[0].Value);
+                Assert.AreEqual(Notification.CreateOnNext("1"), testObserver2.Messages[1].Value);
+                Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver2.Messages[2].Value);
             }
         }
 
