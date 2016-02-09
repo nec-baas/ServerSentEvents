@@ -221,9 +221,6 @@ namespace ServerSentEvents
         {
             Debug.WriteLine("Stop() <start>");
 
-            // コールバック実行
-            OnStateChanged(EventSourceState.CLOSED);
-
             if (readSubscription != null)
             {
                 readSubscription.Dispose();
@@ -234,6 +231,8 @@ namespace ServerSentEvents
                 groupBySubscription.Dispose();
                 groupBySubscription = null;
             }
+            // コールバック実行
+            OnStateChanged(EventSourceState.CLOSED);
 
             Debug.WriteLine("Stop() <end>");
         }
