@@ -24,6 +24,7 @@ namespace ServerSentEvents.Tests
         private int OpenCalledCount;
         private int ClosedCalledCount;
         private int try503Times;
+        private bool hasServerDisconnectExecuted = false;
         private const int DefaultRetryTime = 3000; //milli second
 
         [SetUp]
@@ -135,14 +136,21 @@ namespace ServerSentEvents.Tests
                     await writer.WriteAsync("data: " + i + "\n\n");
                     await Task.Delay(1000);
                 }
-                // サーバ終了
-                ws.Stop();
 
-                ws = new TestWebServer(baseUri);
-                ws.AddRoute("/ServerDisconnect", ServerDisconnect);
+                if (!hasServerDisconnectExecuted)
+                {
+                    // サーバ終了
+                    ws.Stop();
 
-                // サーバ開始
-                ws.Start();
+
+                    ws = new TestWebServer(baseUri);
+                    ws.AddRoute("/ServerDisconnect", ServerDisconnect);
+
+                    // サーバ開始
+                    ws.Start();
+
+                    hasServerDisconnectExecuted = true;
+                }
             }
         }
         private async Task SimpleEventStreamBasicAuthRequired(HttpListenerRequest request, HttpListenerResponse response)
