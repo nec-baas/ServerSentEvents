@@ -1,7 +1,4 @@
-﻿// Copyright (c) Kwang Yul Seo. All rights reserved.
-// Licensed under the Apache 2.0 license. See LICENSE file in the project root for full license information.
-
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Cache;
 using System.IO;
@@ -135,12 +132,6 @@ namespace ServerSentEvents
 
                     return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
                 }
-                // SSEメッセージで"retry"値が設定された場合は常にその値を使って再接続
-                //if (this.RetrySetBySseFlag)
-                //{
-                //    return Observable.Empty<string>().Delay(TimeSpan.FromMilliseconds(this.ReconnectionTime));
-                //}
-
                 // それ以外は Exponential Backoff で待つ
                 else
                 {
@@ -162,36 +153,10 @@ namespace ServerSentEvents
                     return Read(webResponse);
                 })
                 .Catch((Exception e) => NotifyHttpError(e))
-                //.Concat(delay).Repeat();
-                //.Finally(() =>
-                //    stateSubject.OnNext(EventSourceState.CLOSED)
-                //)
                 .OnErrorResumeNext(delay).Repeat();
 
         }
-        /*
-        //test
-        IObservable<HttpWebResponse> test = Observable.Defer(() =>
-        {
-            return Observable.Empty<HttpWebResponse>();
-        });
-
-        //test2
-        IObservable<HttpWebResponse> test2(WebException e)
-        {
-            // エラーをコールバックする
-            if (this.OnErrorCallback != null)
-            {
-                this.OnErrorCallback.OnError(((HttpWebResponse)e.Response).StatusCode, (HttpWebResponse)e.Response);
-            }
-            //Observable.
-            //return (IObservable<HttpWebResponse>)((HttpWebResponse)e.Response);
-            //return (HttpWebResponse)e.Response;
-            //return Observable.Empty<HttpWebResponse>();
-            throw e;
-            //return null;
-        }
-        */
+       
         // エラーコールバック実行
         private IObservable<string> NotifyHttpError(Exception e)
         {

@@ -232,9 +232,7 @@ namespace ServerSentEvents.Tests
                 h => es.StateChanged += h, h => es.StateChanged -= h)
                 .Select(p => p.EventArgs.State)
                 .Where(state => state == EventSourceState.CLOSED);
-            //var test = Notification.CreateOnCompleted<string>().ToString();
             var testObs = sseObs.TakeUntil(sseObs.Where(sse => sse.Data.Equals("2")));
-//            var testObs = sseObs.TakeUntil(closeObs);
 
             return testObs;
         }
@@ -286,16 +284,8 @@ namespace ServerSentEvents.Tests
         [Test]
         public void TestStateChenged()
         {
-            var scheduler = new TestScheduler();
-            var testObserver = scheduler.CreateObserver<EventSourceState>();
-
             using (var es = new EventSource(new Uri(baseUri, "/simple")))
             {
-                // イベントハンドラ登録
-                //var testObs = GetStateObservable(es);
-                // testObsに通知があった場合に、testObserverに通知する
-                //testObs.Subscribe(testObserver.AsObserver());
-
                 es.StateChanged += (sender, e) =>
                 {
                     if (e.State == EventSourceState.CONNECTING)
@@ -316,17 +306,10 @@ namespace ServerSentEvents.Tests
                 Thread.Sleep(500);
                 es.Stop();
                 Thread.Sleep(100);
-
-                //testObs.Wait();
             }
             Assert.AreEqual(ConnectionCalledCount, 1);
             Assert.AreEqual(OpenCalledCount, 1);
             Assert.AreEqual(ClosedCalledCount, 1);
-
-            //Assert.AreEqual(3, testObserver.Messages.Count);
-            //Assert.AreEqual(Notification.CreateOnNext(EventSourceState.CONNECTING), testObserver.Messages[0].Value);
-            //Assert.AreEqual(Notification.CreateOnNext(EventSourceState.OPEN), testObserver.Messages[1].Value);
-            //Assert.AreEqual(Notification.CreateOnCompleted<EventSourceState>(), testObserver.Messages[2].Value);
         }
 
         /// <summary>
@@ -345,17 +328,12 @@ namespace ServerSentEvents.Tests
                 testObs.Subscribe(testObserver.AsObserver());
 
                 es.Start(null, null);
-                //testObs.Wait.Timeout(TimeSpan.FromSeconds(4000));
-                //await testObs.TimeoutException( (TimeSpan.FromSeconds(1));
                 testObs.Wait();
-
             }
 
-            //Assert.AreEqual(4, testObserver.Messages.Count);
             Assert.AreEqual(3, testObserver.Messages.Count);
             Assert.AreEqual(Notification.CreateOnNext("0"), testObserver.Messages[0].Value);
             Assert.AreEqual(Notification.CreateOnNext("1"), testObserver.Messages[1].Value);
-            //Assert.AreEqual(Notification.CreateOnNext("2"), testObserver.Messages[2].Value);
             Assert.AreEqual(Notification.CreateOnCompleted<string>(), testObserver.Messages[2].Value);
         }
 
@@ -427,16 +405,8 @@ namespace ServerSentEvents.Tests
         [Test]
         public void TestEventSourceUnAuthorizedException()
         {
-            var scheduler = new TestScheduler();
-            var testObserver = scheduler.CreateObserver<EventSourceState>();
-
             using (var es = new EventSource(new Uri(baseUri, "/simple")))
             {
-                // イベントハンドラ登録
-                //var testObs = GetStateObservable(es);
-                // testObsに通知があった場合に、testObserverに通知する
-                //testObs.Subscribe(testObserver.AsObserver());
-
                 // エラーコールバック登録
                 OnErrorCallback errorCallback = new OnErrorCallback();
                 es.RegisterOnError(errorCallback);
@@ -451,20 +421,10 @@ namespace ServerSentEvents.Tests
                 };
 
                 es.Start("InvalidUsername", "InvalidPassword");
-                //testObs.Wait();
 
                 // コールバック実行を待つ
                 Thread.Sleep(100);
-                /*
-                try
-                {
-                    testObs.Wait();
-                }
-                catch (InvalidOperationException e)
-                {
-                    //ok
-                }
-                */
+
                 Assert.IsTrue(errorCallback.isOnErrorCalled);
                 Assert.AreEqual(ClosedCalledCount, 1);
                 Assert.AreEqual(errorCallback.stCode, HttpStatusCode.Unauthorized);
@@ -528,9 +488,6 @@ namespace ServerSentEvents.Tests
         [Test]
         public void TestEventSourceRetryWithHeaderValue()
         {
-            //  TestWebServerからヘッダを返し、
-            //  EventSourceState.CLOSEとEventSourceState.CONNECTINGを検知してその間の時間が何秒以上何秒未満かで確認する？
-
             var scheduler = new TestScheduler();
             var testObserver = scheduler.CreateObserver<string>();
             TimeSpan timeSpan = TimeSpan.FromSeconds(0);

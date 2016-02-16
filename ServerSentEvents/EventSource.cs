@@ -103,7 +103,6 @@ namespace ServerSentEvents
         public event EventHandler<ServerSentEventReceivedEventArgs> EventReceived;
 
         private readonly EventStreamReader reader;
-        //private IDisposable readSubscription;
         public IDisposable readSubscription;
         private IDisposable groupBySubscription;
         public OnErrorReceived OnErrorCallback { get; private set; }
@@ -123,7 +122,9 @@ namespace ServerSentEvents
         private void DispatchEvent(ServerSentEvent sse)
         {
             if (sse.IsEmptyData)
+            {
                 return;
+            }
 
             if (!string.IsNullOrEmpty(sse.LastEventId))
                 reader.LastEventId = sse.LastEventId;
