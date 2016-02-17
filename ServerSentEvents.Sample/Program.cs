@@ -14,7 +14,7 @@ namespace ServerSentEvents.Sample
             var es = new EventSource(uri);
             es.EventReceived += (sender, e) => Console.WriteLine("Event: {0}", e.Message);
             es.StateChanged += (sender, e) => Console.WriteLine("State: {0}", e.State);
-            es.Start();
+            es.Start(null, null);
 
             Console.WriteLine("Press any key to stop EventSource");
             Console.ReadKey();
