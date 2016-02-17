@@ -2,7 +2,7 @@
 bin
 obj
 packages
-.nuget
+.nuget/NuGet.exe
 TestResult.xml
 .paket/paket.exe
 
