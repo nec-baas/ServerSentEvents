@@ -110,7 +110,10 @@ namespace ServerSentEvents
         /// <returns>受信メッセージ</returns>
         public IObservable<string> ReadLines(string username, string password, OnErrorReceived OnErrorCallback)
         {
-            this.OnErrorCallback = OnErrorCallback;
+            lock (this)
+            {
+                this.OnErrorCallback = OnErrorCallback;
+            }
             Func<int, TimeSpan> strategy = ExponentialBackoff;
 
             // エラー時の処理
@@ -166,9 +169,12 @@ namespace ServerSentEvents
                 e2 = (WebException)e;
 
                 // エラーをコールバックする
-                if (e2.Response != null && this.OnErrorCallback != null)
+                lock (this)
                 {
-                    this.OnErrorCallback.OnError(((HttpWebResponse)e2.Response).StatusCode, (HttpWebResponse)e2.Response);
+                    if (e2.Response != null && this.OnErrorCallback != null)
+                    {
+                        this.OnErrorCallback.OnError(((HttpWebResponse)e2.Response).StatusCode, (HttpWebResponse)e2.Response);
+                    }
                 }
             }
 
