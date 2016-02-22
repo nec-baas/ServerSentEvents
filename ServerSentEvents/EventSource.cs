@@ -236,6 +236,10 @@ namespace ServerSentEvents
                 groupBySubscription.Dispose();
                 groupBySubscription = null;
             }
+
+            // 接続施行回数を初期化
+            reader.attempt = 0;
+
             // コールバック実行
             OnStateChanged(EventSourceState.CLOSED);
 

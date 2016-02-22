@@ -20,7 +20,7 @@ namespace ServerSentEvents
         public string LastEventId { get; set; }
 
         // 接続施行回数
-        private int attempt = 0;
+        public int attempt = 0;
 
         // エラー検知用コールバック
         private OnErrorReceived OnErrorCallback;
