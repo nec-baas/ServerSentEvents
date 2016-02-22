@@ -170,12 +170,10 @@ namespace ServerSentEvents
                         // サーバと切断する
                         parent.Stop();
                         // エラーコールバックを実行する
-                        lock (this)
+                        var cb = parent.OnErrorCallback;
+                        if (cb != null)
                         {
-                            if (parent.OnErrorCallback != null)
-                            {
-                                parent.OnErrorCallback.OnError(StatusCode, Response);
-                            }
+                            cb.OnError(StatusCode, Response);
                         }
                         break;
                 }
@@ -255,10 +253,9 @@ namespace ServerSentEvents
         public void RegisterOnError(OnErrorReceived Callback)
         {
             Debug.WriteLine("RegisterOnError() <start>");
-            lock (this)
-            {
-                this.OnErrorCallback = Callback;
-            }
+
+            this.OnErrorCallback = Callback;
+
             Debug.WriteLine("RegisterOnError() <end>");
         }
 
