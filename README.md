@@ -1,14 +1,10 @@
-# ServerSentEvents [![NuGet](https://img.shields.io/nuget/v/ServerSentEvents.svg)](https://www.nuget.org/packages/ServerSentEvents/)
+ServerSentEvents : モバイルバックエンド基盤 .NetSDK ServerSentEvents
+====================================================================
 
-ServerSentEvents is a client library for Server-Sent Events (SSE).
+モバイルバックエンド基盤 .NetSDK ServerSentEventsのソースコードリリース。
 
-## Build
+Webサイトは以下の通り。
 
-- You can use the FAKE script:
+* https://s.gisp.nec.com/antc/nebula/
 
- * Windows: Run *build.cmd* [![Build status](https://ci.appveyor.com/api/projects/status/r698u4n37sx3atb9?svg=true)](https://ci.appveyor.com/project/kseo/serversentevents)
- * Mono: Run *build.sh* [![Build Status](https://travis-ci.org/kseo/ServerSentEvents.svg?branch=master)](https://travis-ci.org/kseo/ServerSentEvents)
-
-## Maintainer(s)
-
-- [@kseo](https://github.com/kseo)
+ドキュメント類は docs/ 以下を参照。

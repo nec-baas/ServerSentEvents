@@ -10,12 +10,6 @@
 ビルド手順
 ----------
 
-コマンドプロンプトで、"build.cmd Build" を実行する。
-
-備考
-----
-上記ビルドを実施後は、下記手順でVisual Studioにてビルド可能。
-
 ServerSentEvents.sln ファイルを Visual Studio で開く。
 
 ビルド ⇒ ソリューションのビルド でビルドを実施する。
