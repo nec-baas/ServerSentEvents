@@ -4,6 +4,7 @@
 * Apache License 2.0
 
     * Reactive Extensions : http://rx.codeplex.com/
+    * ServerSentEvents : https://github.com/kseo/ServerSentEvents
 
 テスト時のみ必要な OSS
 ----------------------
