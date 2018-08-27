@@ -1,10 +1,9 @@
-ServerSentEvents : ƒ‚ƒoƒCƒ‹ƒoƒbƒNƒGƒ“ƒhŠî”Õ .NetSDK ServerSentEvents
-====================================================================
+ServerSentEvents : NECãƒ¢ãƒã‚¤ãƒ«ãƒãƒƒã‚¯ã‚¨ãƒ³ãƒ‰åŸºç›¤ .NetSDK ServerSentEvents
+========================================================================
 
-ƒ‚ƒoƒCƒ‹ƒoƒbƒNƒGƒ“ƒhŠî”Õ .NetSDK ServerSentEvents‚Ìƒ\[ƒXƒR[ƒhƒŠƒŠ[ƒXB
+NECãƒ¢ãƒã‚¤ãƒ«ãƒãƒƒã‚¯ã‚¨ãƒ³ãƒ‰åŸºç›¤ .NetSDK ServerSentEvents ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã€‚
 
-WebƒTƒCƒg‚ÍˆÈ‰º‚Ì’Ê‚èB
+æœ¬ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã¯ https://www.nuget.org/packages/ServerSentEvents/ ã‚’ãƒ™ãƒ¼ã‚¹ã«
+æ”¹é€ ã‚’è¡Œã£ãŸã‚‚ã®ã§ã™ã€‚
 
-* https://s.gisp.nec.com/antc/nebula/
-
-ƒhƒLƒ…ƒƒ“ƒg—Ş‚Í docs/ ˆÈ‰º‚ğQÆB
+* Website: https://nec-baas.github.io/
