@@ -1,11 +1,10 @@
 ﻿2016-03-14: v4.0.0
 
-    * 不要なファイルを削除
+    * Improve for NEC BaaS
+      - Basic authentication
+      - Add error handling, callbacks
+      - Bug fixes
 
-2016-03-07: v4.0.0 (beta2)
+2015-04-25: v1.0.0
 
-    * バージョンのみ変更
-
-2016-02-22: v4.0.0 (beta1)
-
-    * 初版
+    * Initial release (original)
